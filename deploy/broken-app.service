@@ -1,0 +1,24 @@
+[Unit]
+Description=Broken App Service
+After=network.target
+
+[Service]
+# User & Group
+User=yuwen
+Group=yuwen
+
+# Working Directory
+WorkingDirectory=/home/yuwen/devops-app
+
+# env.
+Environment="APP_ENV=production"
+
+# Python-Interpreter  VENV
+ExecStart=/home/yuwen/devops-app/.venv/bin/python app.py
+
+# Restart Logic
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
