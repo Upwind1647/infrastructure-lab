@@ -1,0 +1,19 @@
+# basics
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# environments
+.venv/
+env/
+venv/
+ENV/
+
+# secrets
+.env
+*.env
+.DS_Store
+
+# mkdocs
+site/
