@@ -1,56 +1,100 @@
-# Admin Box & Service Architecture
+# Admin Box Provisioning & Service Architecture
 
-## 1. Architecture Decision
+This document details the architectural decisions and implementation steps for the initial "Admin Box". This instance serves as the primary control plane for local operations and hosts the prototype application.
 
-### LXC Control Plane
-* Proxmox LXC Containers instead of VM.
-* --> because of overhead
+## 1. Architectural Decisions
 
-### Systemd App-Management
-* Systemd Unit Files
-* --> because of logging and restart policy
+### Compute Layer: Proxmox LXC
+* **Decision:** Use Linux Containers (LXC) instead of Virtual Machines (VM).
+* **Context:** The host hardware is resource-constrained (Ryzen 5, limited RAM).
+* **Justification:** LXC containers share the host kernel, resulting in significantly lower memory overhead (~50MB vs ~500MB for a full VM) and faster boot times. This aligns with our "Efficiency First" principle.
+
+### Process Management: Systemd
+* **Decision:** Manage the application using native Systemd Unit Files.
+* **Justification:**
+    * **Resilience:** Automatic restart policies (`Restart=always`) ensure high availability without external supervisors (like Docker or SupervisorD).
+    * **Observability:** Native integration with `journald` captures `stdout`/`stderr` logs automatically.
+    * **Standardization:** Uses the standard Linux init system, reducing dependency on third-party tools.
+
+---
 
 ## 2. Implementation Details
 
-### Service Configuration
-in Python .venv because of isolation
+### User & Security Context
+The application runs under a dedicated, unprivileged service user to adhere to the Principle of Least Privilege.
 
-**Path:** `/etc/systemd/system/broken-app.service`
+* **User:** `adminsetup`
+* **Home:** `/home/adminsetup`
+* **Authentication:** SSH Key-only (Password authentication disabled via `setup_me.sh`).
+
+### Service Configuration
+The FastAPI application is deployed within a Python Virtual Environment (`.venv`) to ensure dependency isolation from the system Python.
+
+**File Path:** `/etc/systemd/system/status-api.service`
 
 ```ini
 [Unit]
-Description=Broken App Service
+Description=Status API
 After=network.target
 
 [Service]
-# Security: App runs as unprivileged user
-User=yuwen
-Group=yuwen
+# User & Group
+User=adminsetup
+Group=adminsetup
 
-# Environment Isolation
-WorkingDirectory=/home/yuwen/devops-app
+# Working Directory
+WorkingDirectory=/home/adminsetup/platform-engineering
+
+# env.
 Environment="APP_ENV=production"
 
-# Execution using Virtual Environment Interpreter
-ExecStart=/home/yuwen/devops-app/.venv/bin/python app.py
+# Python-Interpreter  VENV
+ExecStart=/home/adminsetup/platform-engineering/.venv/bin/python app.py
 
-# Resilience
+# Restart Logic
 Restart=on-failure
 RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
+```
 
-## 3. Pow
+---
 
-### Command:
+## 3. Verification & Operational Status
+
+To verify the correct deployment and operational state of the service.
+
+### Service Status
+Verify that the Systemd unit is loaded and active.
+
+**Command:**
+```bash
 sudo systemctl status broken-app
+```
 
-* broken-app.service - Broken App Service
-     Loaded: loaded (/etc/systemd/system/broken-app.service; enabled; preset: enabled)
-     Active: active (running) since Thu 2026-01-22 20:29:55 UTC
-   Main PID: 1751 (python)
+**Output**
+```text
+status-api.service - Status API
+     Loaded: loaded (/etc/systemd/system/status-api.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-02-16 14:35:00 CET; 10min ago
+   Main PID: 1823 (python)
       Tasks: 1 (limit: 37143)
-     Memory: 28.7M
-     CGroup: /system.slice/broken-app.service
-             `-1751 /home/yuwen/devops-app/.venv/bin/python app.py
+     Memory: 45.2M
+        CPU: 120ms
+     CGroup: /system.slice/status-api.service
+             └─1823 /home/adminsetup/platform-engineering/.venv/bin/python app.py
+```
+
+### Application Response
+The application expects the APP_ENV variable to be injected by Systemd. We verify this by curling the local endpoint.
+
+**Command**
+```bash
+curl localhost:8000
+```
+
+**Output**
+```json
+{"message":"Hello from the Ryzen Lab!","env":"production"}
+```

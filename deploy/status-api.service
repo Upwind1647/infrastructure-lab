@@ -1,20 +1,20 @@
 [Unit]
-Description=Broken App Service
+Description=Status API
 After=network.target
 
 [Service]
 # User & Group
-User=yuwen
-Group=yuwen
+User=adminsetup
+Group=adminsetup
 
 # Working Directory
-WorkingDirectory=/home/yuwen/devops-app
+WorkingDirectory=/home/adminsetup/platform-engineering
 
 # env.
 Environment="APP_ENV=production"
 
 # Python-Interpreter  VENV
-ExecStart=/home/yuwen/devops-app/.venv/bin/python app.py
+ExecStart=/home/adminsetup/platform-engineering/.venv/bin/python app.py
 
 # Restart Logic
 Restart=on-failure
