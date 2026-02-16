@@ -70,7 +70,7 @@ Verify that the Systemd unit is loaded and active.
 
 **Command:**
 ```bash
-sudo systemctl status broken-app
+sudo systemctl status status-api
 ```
 
 **Output**
