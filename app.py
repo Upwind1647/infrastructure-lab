@@ -19,7 +19,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_record)
 
 
-logger = logging.getLogger("DevOpsApp")
+logger = logging.getLogger("StatusAPI")
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(JsonFormatter())
 logger.addHandler(handler)

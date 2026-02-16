@@ -8,13 +8,13 @@ User=adminsetup
 Group=adminsetup
 
 # Working Directory
-WorkingDirectory=/home/adminsetup/platform-engineering
+WorkingDirectory=/home/adminsetup/infrastructure-lab
 
 # env.
 Environment="APP_ENV=production"
 
 # Python-Interpreter  VENV
-ExecStart=/home/adminsetup/platform-engineering/.venv/bin/python app.py
+ExecStart=/home/adminsetup/infrastructure-lab/.venv/bin/python app.py
 
 # Restart Logic
 Restart=on-failure

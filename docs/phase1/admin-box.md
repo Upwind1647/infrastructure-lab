@@ -43,13 +43,13 @@ User=adminsetup
 Group=adminsetup
 
 # Working Directory
-WorkingDirectory=/home/adminsetup/platform-engineering
+WorkingDirectory=/home/adminsetup/infrastructure-lab
 
 # env.
 Environment="APP_ENV=production"
 
 # Python-Interpreter  VENV
-ExecStart=/home/adminsetup/platform-engineering/.venv/bin/python app.py
+ExecStart=/home/adminsetup/infrastructure-lab/.venv/bin/python app.py
 
 # Restart Logic
 Restart=on-failure
@@ -83,7 +83,7 @@ status-api.service - Status API
      Memory: 45.2M
         CPU: 120ms
      CGroup: /system.slice/status-api.service
-             └─1823 /home/adminsetup/platform-engineering/.venv/bin/python app.py
+             └─1823 /home/adminsetup/infrastructure-lab/.venv/bin/python app.py
 ```
 
 ### Application Response
