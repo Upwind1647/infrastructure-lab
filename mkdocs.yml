@@ -1,1 +1,27 @@
 site_name: Infrastructure Lab Docs
+site_description: from bare metal to cloud.
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: deep purple
+    accent: teal
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Phase 1 — Local:
+      - Admin Box: phase1/admin-box.md
+      - ADR-001 Hardening Script: phase1/adr-001-hardening-script.md
+  - Phase 2 — Cloud:
+      - Network Architecture: phase2/network.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
