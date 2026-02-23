@@ -7,12 +7,12 @@ This document details the architectural decisions and implementation steps for t
 ### Compute Layer: Proxmox LXC
 * **Decision:** Use Linux Containers (LXC) instead of Virtual Machines (VM).
 * **Context:** The host hardware is resource-constrained (Ryzen 5, limited RAM).
-* **Justification:** LXC containers share the host kernel, resulting in significantly lower memory overhead (~50MB vs ~500MB for a full VM) and faster boot times. This aligns with our "Efficiency First" principle.
+* **Justification:** LXC containers share the host kernel, resulting in significantly lower memory overhead and faster boot times.
 
 ### Process Management: Systemd
 * **Decision:** Manage the application using native Systemd Unit Files.
 * **Justification:**
-    * **Resilience:** Automatic restart policies (`Restart=on-failure`) ensure high availability without external supervisors (like Docker or SupervisorD).
+    * **Resilience:** Automatic restart policies (`Restart=on-failure`) ensure high availability without external supervisors.
     * **Observability:** Native integration with `journald` captures `stdout`/`stderr` logs automatically.
     * **Standardization:** Uses the standard Linux init system, reducing dependency on third-party tools.
 
