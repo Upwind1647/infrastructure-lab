@@ -2,167 +2,173 @@
 
 set -euo pipefail
 
-# Config
-readonly USERNAME="adminsetup"
-readonly SSH_CONFIG="/etc/ssh/sshd_config"
-SSH_NEEDS_RESTART=0
-
-# Logging
-log_ok()      { echo "[OK]      $1"; }
-log_changed() { echo "[CHANGED] $1"; }
-log_skip()    { echo "[SKIP]    $1"; }
-log_warn()    { echo "[WARN]    $1" >&2; }
-log_error()   { echo "[ERROR]   $1" >&2; }
-
-# Functions
-
-# Sets an sshd_config key
-set_sshd_option() {
-    local key="$1"
-    local value="$2"
-
-    # Case 1: Already set correctly
-    if grep -qE "^${key}[[:space:]]+${value}$" "$SSH_CONFIG"; then
-        log_skip "${key} already set to '${value}'."
-        return
-    fi
-
-    # Case 2: Uncommented line with wrong value
-    if grep -qE "^${key}[[:space:]]+" "$SSH_CONFIG"; then
-        sed -i -E "s/^${key}[[:space:]]+.*/${key} ${value}/" "$SSH_CONFIG"
-        log_changed "${key} → '${value}'."
-
-    # Case 3: Commented out
-    elif grep -qE "^#[[:space:]]*${key}" "$SSH_CONFIG"; then
-        sed -i -E "s/^#[[:space:]]*${key}.*/${key} ${value}/" "$SSH_CONFIG"
-        log_changed "${key} uncommented → '${value}'."
-
-    # Case 4: Line missing entirely
-    else
-        echo "${key} ${value}" >> "$SSH_CONFIG"
-        log_changed "${key} appended → '${value}'."
-    fi
-
-    SSH_NEEDS_RESTART=1
-}
-
-# 0. PRE-FLIGHT CHECK
-
-if [[ "$EUID" -ne 0 ]]; then
-    log_error "This script must be run as root."
+# Check if run as root
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root." >&2
     exit 1
 fi
 
-# 1. USER & SUDO
+# Variables
+USERNAME="adminsetup"
+SSH_CONFIG="/etc/ssh/sshd_config"
+SSH_NEEDS_RESTART=0
+GITHUB_USER="Upwind1647"
+GITHUB_KEYS_URL="https://github.com/${GITHUB_USER}.keys"
 
+# Create user
 if id "$USERNAME" &>/dev/null; then
-    log_skip "User '$USERNAME' already exists."
+    echo "User $USERNAME already exists."
 else
     useradd -m -s /bin/bash "$USERNAME"
-    log_changed "User '$USERNAME' created."
+    echo "User created: $USERNAME"
 fi
 
-if command -v sudo &>/dev/null; then
-    log_skip "sudo already installed."
-else
-    apt-get update -qq && apt-get install -y -qq sudo
-    log_changed "sudo installed."
-fi
+# Lock password for user
+passwd -l "$USERNAME" &>/dev/null
+echo "Password for $USERNAME locked."
 
-if groups "$USERNAME" | grep -qw "sudo"; then
-    log_skip "'$USERNAME' already in sudo group."
-else
-    usermod -aG sudo "$USERNAME"
-    log_changed "'$USERNAME' added to sudo group."
-fi
-
-# 2. SSH KEY PREPARATION
-
-readonly SSH_DIR="/home/${USERNAME}/.ssh"
-readonly AUTH_KEYS="${SSH_DIR}/authorized_keys"
-
-if [[ -d "$SSH_DIR" ]]; then
-    log_skip "'$SSH_DIR' already exists."
-else
+# Create .ssh folder
+SSH_DIR="/home/$USERNAME/.ssh"
+if [[ ! -d "$SSH_DIR" ]]; then
     mkdir -p "$SSH_DIR"
-    log_changed "Created '$SSH_DIR'."
+    echo "Created directory: $SSH_DIR"
 fi
 
-if [[ -f "$AUTH_KEYS" ]]; then
-    log_skip "'$AUTH_KEYS' already exists."
-else
-    touch "$AUTH_KEYS"
-    log_changed "Created '$AUTH_KEYS'."
-fi
-
+# SSH folder permissions
 chmod 700 "$SSH_DIR"
-chmod 600 "$AUTH_KEYS"
-chown -R "${USERNAME}:${USERNAME}" "$SSH_DIR"
-log_ok "SSH directory permissions verified."
+chown -R "$USERNAME":"$USERNAME" "$SSH_DIR"
 
-# 3. SSH HARDENING
+# Install sudo and curl if missing
+if ! command -v sudo &>/dev/null || ! command -v curl &>/dev/null; then
+    echo "Installing sudo and curl..."
+    apt-get update && apt-get install -y sudo curl
+fi
 
-if [[ ! -s "$AUTH_KEYS" ]]; then
-    log_warn "============================================================"
-    log_warn "'$AUTH_KEYS' is EMPTY."
-    log_warn "Skipping SSH hardening to prevent lock-out."
-    log_warn "Add your public key first, then re-run this script."
-    log_warn "============================================================"
+# Add user to sudo group
+if groups "$USERNAME" | grep -q "\bsudo\b"; then
+    echo "$USERNAME already has sudo."
 else
-    set_sshd_option "PermitRootLogin" "no"
-    set_sshd_option "PasswordAuthentication" "no"
+    echo " Adding $USERNAME to sudo "
+    usermod -aG sudo "$USERNAME"
+fi
 
-    if [[ "$SSH_NEEDS_RESTART" -eq 1 ]]; then
-        systemctl restart ssh
-        log_changed "SSH service restarted."
+# NOPASSWD for $USERNAME
+echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-$USERNAME"
+chmod 0440 "/etc/sudoers.d/90-$USERNAME"
+
+# Add github public key
+SSH_DIR="/home/$USERNAME/.ssh"
+AUTHORIZED_KEYS="$SSH_DIR/authorized_keys"
+
+# Fetch keys from github
+echo "Fetching SSH keys for $GITHUB_USER"
+TMP_KEYS_FILE=$(mktemp)
+if ! curl --silent --fail "$GITHUB_KEYS_URL" -o "$TMP_KEYS_FILE"; then
+    echo "ERROR: Could not fetch key from $GITHUB_KEYS_URL"
+    exit 1
+fi
+
+# Filter to valid key lines
+grep '^[[:space:]]*ssh-' "$TMP_KEYS_FILE" > "$TMP_KEYS_FILE.filtered" || true
+if ! [ -s "$TMP_KEYS_FILE.filtered" ]; then
+    echo "ERROR: No valid SSH public keys found at $GITHUB_KEYS_URL"
+    rm -f "$TMP_KEYS_FILE" "$TMP_KEYS_FILE.filtered"
+    exit 1
+fi
+
+# Key permissions and write keys
+touch "$AUTHORIZED_KEYS"
+chmod 600 "$AUTHORIZED_KEYS"
+chown "$USERNAME":"$USERNAME" "$AUTHORIZED_KEYS"
+
+ADDED_KEY=0
+while read -r keyline; do
+    if ! grep -qF "$keyline" "$AUTHORIZED_KEYS"; then
+        echo "$keyline" >> "$AUTHORIZED_KEYS"
+        ADDED_KEY=1
+    fi
+done < "$TMP_KEYS_FILE.filtered"
+chown "$USERNAME":"$USERNAME" "$AUTHORIZED_KEYS"
+rm -f "$TMP_KEYS_FILE" "$TMP_KEYS_FILE.filtered"
+
+if [ ! -s "$AUTHORIZED_KEYS" ]; then
+    echo "ERROR: No SSH key written for $USERNAME in $AUTHORIZED_KEYS."
+    exit 1
+fi
+if [ "$ADDED_KEY" -eq 1 ]; then
+    echo "Added SSH key(s) from $GITHUB_USER to $AUTHORIZED_KEYS"
+else
+    echo "SSH key from $GITHUB_USER already in $AUTHORIZED_KEYS"
+fi
+
+# SSH
+
+# Backup SSH config
+if [ ! -f "$SSH_CONFIG" ]; then
+    echo "ERROR: $SSH_CONFIG not found." >&2
+    exit 1
+fi
+if [ ! -f "${SSH_CONFIG}.bak" ]; then
+    cp -a "$SSH_CONFIG" "${SSH_CONFIG}.bak"
+    echo "Backed up sshd_config to ${SSH_CONFIG}.bak"
+fi
+
+# Disable root login
+if grep -qE "^\s*PermitRootLogin\s+no" "$SSH_CONFIG"; then
+    echo "Root login already disabled."
+else
+    if grep -qE "^\s*#?\s*PermitRootLogin" "$SSH_CONFIG"; then
+        sed -i 's|^\s*#?\s*PermitRootLogin.*|PermitRootLogin no|' "$SSH_CONFIG"
     else
-        log_skip "SSH config unchanged. No restart needed."
+        echo "PermitRootLogin no" >> "$SSH_CONFIG"
+    fi
+    SSH_NEEDS_RESTART=1
+    echo "Disabled root login for SSH."
+fi
+
+# Force key-auth
+if grep -qE "^\s*PasswordAuthentication\s+no" "$SSH_CONFIG"; then
+    echo "Password Authentication already disabled."
+else
+    if grep -qE "^\s*#?\s*PasswordAuthentication" "$SSH_CONFIG"; then
+        sed -i 's|^\s*#?\s*PasswordAuthentication.*|PasswordAuthentication no|' "$SSH_CONFIG"
+    else
+        echo "PasswordAuthentication no" >> "$SSH_CONFIG"
+    fi
+    SSH_NEEDS_RESTART=1
+    echo "Disabled SSH password authentication."
+fi
+
+# UFW
+
+# Install ufw
+if ! command -v ufw &>/dev/null; then
+    echo "Installing UFW"
+    apt-get update && apt-get install -y ufw
+fi
+
+# Set defaults and allow SSH
+ufw default deny incoming > /dev/null
+ufw default allow outgoing > /dev/null
+ufw limit ssh > /dev/null
+
+# Enable UFW
+if ufw status | grep -q "Status: active"; then
+    echo "UFW is already active"
+else
+    echo "Enabling UFW"
+    ufw --force enable
+fi
+
+if [ "$SSH_NEEDS_RESTART" -eq 1 ]; then
+    if ! sshd -t 2>/dev/null; then
+        echo "ERROR: sshd_config is invalid (sshd -t failed). Restore from ${SSH_CONFIG}.bak if needed." >&2
+        exit 1
+    fi
+    echo "Restarting SSH"
+    if ! ( systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null || service ssh restart 2>/dev/null ); then
+        echo "ERROR: Could not restart SSH service." >&2
     fi
 fi
 
-# 4. UFW FIREWALL
-
-if command -v ufw &>/dev/null; then
-    log_skip "UFW already installed."
-else
-    apt-get update -qq && apt-get install -y -qq ufw
-    log_changed "UFW installed."
-fi
-
-ufw_status=$(ufw status verbose 2>/dev/null || true)
-
-if echo "$ufw_status" | grep -q "Default: deny (incoming)"; then
-    log_skip "UFW default incoming: deny."
-else
-    ufw default deny incoming > /dev/null
-    log_changed "UFW default incoming → deny."
-fi
-
-if echo "$ufw_status" | grep -q "Default: allow (outgoing)"; then
-    log_skip "UFW default outgoing: allow."
-else
-    ufw default allow outgoing > /dev/null
-    log_changed "UFW default outgoing → allow."
-fi
-
-if ufw status | grep -q "22/tcp.*LIMIT"; then
-    log_skip "UFW SSH limit rule exists."
-else
-    ufw limit ssh > /dev/null
-    log_changed "UFW SSH limit rule added."
-fi
-
-if echo "$ufw_status" | grep -q "Status: active"; then
-    log_skip "UFW already active."
-else
-    ufw --force enable
-    log_changed "UFW enabled."
-fi
-
-echo ""
-log_ok "=== Setup complete ==="
-
-if [[ ! -s "$AUTH_KEYS" ]]; then
-    echo ""
-    log_warn "ACTION REQUIRED: Add your SSH public key to '${AUTH_KEYS}', then re-run."
-fi
+echo "--- Setup Complete ---"

@@ -19,6 +19,15 @@ ExecStart=/home/adminsetup/infrastructure-lab/.venv/bin/python app.py
 # Restart Logic
 Restart=on-failure
 RestartSec=5s
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/home/adminsetup/infrastructure-lab
 
 [Install]
 WantedBy=multi-user.target
