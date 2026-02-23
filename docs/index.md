@@ -12,7 +12,6 @@ Provision and harden a Debian LXC container on Proxmox. Deploy a Python applicat
 
 ### Phase 2 — Cloud Architecture
 Design an AWS VPC with network segmentation.
-
 - [Network Architecture](phase2/network.md)
 
 ---
@@ -26,12 +25,23 @@ Design an AWS VPC with network segmentation.
 ## Quick Start
 
 ```bash
-# 1. Copy your SSH public key into the container
-lxc file push ~/.ssh/id_ed25519.pub admin-box/home/adminsetup/.ssh/authorized_keys
-
-# 2. Run the hardening script
+# 1. Run the hardening script (Creates user, sets up UFW, and fetches GitHub SSH keys)
 lxc exec admin-box -- bash /root/setup_me.sh
 
-# 3. Verify
+# 2. SSH into the container using the newly provisioned user
 ssh adminsetup@<container-ip>
+
+# 3. Clone the repository and set up the application environment
+git clone [https://github.com/Upwind1647/upwind1647-infrastructure-lab.git](https://github.com/Upwind1647/upwind1647-infrastructure-lab.git) infrastructure-lab
+cd infrastructure-lab
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 4. Install and start the Systemd service
+sudo cp deploy/status-api.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now status-api.service
+
+# 5. Verify application is running locally and reachable via UFW
 curl localhost:8000
