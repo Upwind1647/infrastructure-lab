@@ -12,7 +12,7 @@ This document details the architectural decisions and implementation steps for t
 ### Process Management: Systemd
 * **Decision:** Manage the application using native Systemd Unit Files.
 * **Justification:**
-    * **Resilience:** Automatic restart policies (`Restart=always`) ensure high availability without external supervisors (like Docker or SupervisorD).
+    * **Resilience:** Automatic restart policies (`Restart=on-failure`) ensure high availability without external supervisors (like Docker or SupervisorD).
     * **Observability:** Native integration with `journald` captures `stdout`/`stderr` logs automatically.
     * **Standardization:** Uses the standard Linux init system, reducing dependency on third-party tools.
 
@@ -22,15 +22,12 @@ This document details the architectural decisions and implementation steps for t
 
 ### User & Security Context
 The application runs under a dedicated, unprivileged service user to adhere to the Principle of Least Privilege.
-
 * **User:** `adminsetup`
 * **Home:** `/home/adminsetup`
 * **Authentication:** SSH Key-only (Password authentication disabled via `setup_me.sh`).
 
 ### Service Configuration
-The FastAPI application is deployed within a Python Virtual Environment (`.venv`) to ensure dependency isolation from the system Python.
-
-**File Path:** `/etc/systemd/system/status-api.service`
+The FastAPI application is deployed within a Python Virtual Environment (`.venv`) to ensure dependency isolation from the system Python. **File Path:** `/etc/systemd/system/status-api.service`
 
 ```ini
 [Unit]
@@ -54,6 +51,15 @@ ExecStart=/home/adminsetup/infrastructure-lab/.venv/bin/python app.py
 # Restart Logic
 Restart=on-failure
 RestartSec=5s
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/home/adminsetup/infrastructure-lab
 
 [Install]
 WantedBy=multi-user.target
@@ -96,5 +102,5 @@ curl localhost:8000
 
 **Output**
 ```json
-{"message":"Hello from the Ryzen Lab!","env":"production"}
+{"message":"Hello from the Infrastructure Lab!","env":"production"}
 ```
