@@ -38,10 +38,10 @@ fi
 chmod 700 "$SSH_DIR"
 chown -R "$USERNAME":"$USERNAME" "$SSH_DIR"
 
-# Install sudo and curl if missing
-if ! command -v sudo &>/dev/null || ! command -v curl &>/dev/null; then
-    echo "Installing sudo and curl..."
-    apt-get update && apt-get install -y sudo curl
+# Install sudo, curl, git, python3-venv
+if ! command -v sudo &>/dev/null || ! command -v curl &>/dev/null || ! command -v git &>/dev/null; then
+    echo "Installing sudo, curl, git and python3-venv..."
+    apt-get update && apt-get install -y sudo curl git python3-venv
 fi
 
 # Add user to sudo group
@@ -118,8 +118,9 @@ if grep -qE "^\s*PermitRootLogin\s+no" "$SSH_CONFIG"; then
     echo "Root login already disabled."
 else
     if grep -qE "^\s*#?\s*PermitRootLogin" "$SSH_CONFIG"; then
-        sed -i 's|^\s*#?\s*PermitRootLogin.*|PermitRootLogin no|' "$SSH_CONFIG"
+        sed -i -E 's|^\s*#?\s*PermitRootLogin.*|PermitRootLogin no|' "$SSH_CONFIG"
     else
+        [ -n "$(tail -c 1 "$SSH_CONFIG")" ] && echo "" >> "$SSH_CONFIG"
         echo "PermitRootLogin no" >> "$SSH_CONFIG"
     fi
     SSH_NEEDS_RESTART=1
@@ -131,8 +132,9 @@ if grep -qE "^\s*PasswordAuthentication\s+no" "$SSH_CONFIG"; then
     echo "Password Authentication already disabled."
 else
     if grep -qE "^\s*#?\s*PasswordAuthentication" "$SSH_CONFIG"; then
-        sed -i 's|^\s*#?\s*PasswordAuthentication.*|PasswordAuthentication no|' "$SSH_CONFIG"
+        sed -i -E 's|^\s*#?\s*PasswordAuthentication.*|PasswordAuthentication no|' "$SSH_CONFIG"
     else
+        [ -n "$(tail -c 1 "$SSH_CONFIG")" ] && echo "" >> "$SSH_CONFIG"
         echo "PasswordAuthentication no" >> "$SSH_CONFIG"
     fi
     SSH_NEEDS_RESTART=1
