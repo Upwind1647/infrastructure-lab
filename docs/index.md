@@ -32,7 +32,7 @@ lxc exec admin-box -- bash /root/setup_me.sh
 ssh adminsetup@<container-ip>
 
 # 3. Clone the repository and set up the application environment
-git clone [https://github.com/Upwind1647/upwind1647-infrastructure-lab.git](https://github.com/Upwind1647/upwind1647-infrastructure-lab.git) infrastructure-lab
+git clone https://github.com/Upwind1647/infrastructure-lab.git
 cd infrastructure-lab
 python3 -m venv .venv
 source .venv/bin/activate
@@ -45,3 +45,4 @@ sudo systemctl enable --now status-api.service
 
 # 5. Verify application is running locally and reachable via UFW
 curl localhost:8000
+```
