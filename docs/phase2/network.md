@@ -33,29 +33,39 @@ We assigned a /21 block (50% of the total VPC) to the Private Subnet.
 
 ---
 
-## Visual Topology (ASCII)
+## Visual Topology (Mermaid)
 
-```text
-+---------------------------------------------------------------+
-| VPC: 10.200.0.0/20                                            |
-|                                                               |
-|   +--------------------------+    +-----------------------+   |
-|   | Public Subnet A (/24)    |<-->| Internet Gateway (IGW)|<--| Internet
-|   | 10.200.8.0               |    +-----------------------+   |
-|   +--------------------------+                                |
-|             |                                                 |
-|             v (Traffic Routing)                               |
-|                                                               |
-|   +--------------------------+                                |
-|   | Private Subnet A (/21)   |                                |
-|   | 10.200.0.0 - 7.255       | <--- Core Workloads            |
-|   +--------------------------+                                |
-|             |                                                 |
-|             v (Database Connections)                          |
-|                                                               |
-|   +--------------------------+                                |
-|   | Data Subnet A (/24)      |                                |
-|   | 10.200.9.0               | <--- RDS / DBs                 |
-|   +--------------------------+                                |
-|                                                               |
-+---------------------------------------------------------------+
+```mermaid
+graph TD
+    %% Globale Elemente
+    Internet((Internet))
+    IGW["Internet Gateway (IGW)"]
+
+    %% VPC Definition
+    subgraph VPC ["VPC: 10.200.0.0/20"]
+        direction TB
+        
+        %% Availability Zone A
+        subgraph AZA ["AZ A (eu-central-1a)"]
+            direction TB
+            PubA["Public Subnet A (/24)<br>10.200.8.0"]
+            PrivA["Private Subnet A (/21)<br>10.200.0.0 - 7.255<br>Core Workloads"]
+            DataA["Data Subnet A (/24)<br>10.200.9.0<br>RDS / DBs"]
+        end
+    end
+
+    %% Verbindungen
+    Internet --> IGW
+    IGW <--> PubA
+    PubA -- "Traffic Routing" --> PrivA
+    PrivA -- "Database Connections" --> DataA
+
+    %% Styling passend zum Slate Theme
+    classDef public fill:#1e88e5,stroke:#0d47a1,stroke-width:2px,color:#fff;
+    classDef private fill:#43a047,stroke:#1b5e20,stroke-width:2px,color:#fff;
+    classDef data fill:#e53935,stroke:#b71c1c,stroke-width:2px,color:#fff;
+    
+    class PubA public;
+    class PrivA private;
+    class DataA data;
+```
