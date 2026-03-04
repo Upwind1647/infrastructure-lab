@@ -19,6 +19,7 @@ nav:
       - ADR-001 Hardening Script: phase1/adr-001-hardening-script.md
   - Phase 2 — Cloud:
       - Network Architecture: phase2/network.md
+      - ClickOps Deployment: phase2/aws-clickops-deployment.md
 
 markdown_extensions:
   - admonition
