@@ -1,0 +1,10 @@
+.github/
+.venv/
+docs/
+deploy/
+scripts/
+.gitignore
+.pre-commit-config.yaml
+mkdocs.yml
+README.md
+watchdog.log
