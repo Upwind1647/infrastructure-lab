@@ -3,7 +3,7 @@
 ## 1. Mini-ADR
 
 * **Business Value:** Before automating the cloud infrastructure with Terraform, the foundational AWS network primitives (VPC, Subnets, IGW, Security Groups) must be fully understood and manually verified. This drastically reduces the error rate during subsequent automation.
-* **Risk:** "ClickOps" (manual configuration via the AWS UI) is highly error-prone and not reproducible. 
+* **Risk:** "ClickOps" (manual configuration via the AWS UI) is highly error-prone and not reproducible.
 * **Cost:** Minimal. We are utilizing a `t3.micro` instance with an 8 GiB `gp3` volume ("Efficiency First" principle).
 
 ---
@@ -16,14 +16,14 @@ The traffic flow from the internet down to the isolated Python application:
 graph TD
     Client((User / Browser))
     DNS["DNS (A-Record)<br>api.upwind.systems"]
-    
+
     subgraph AWS Cloud
         IGW["Internet Gateway"]
-        
+
         subgraph VPC ["VPC: 10.200.0.0/20"]
             subgraph Public Subnet ["Public Subnet A: 10.200.8.0/24"]
                 SG{"Security Group<br>Inbound: 80, 443, 22"}
-                
+
                 subgraph EC2 ["EC2 (Debian/Ubuntu)"]
                     Nginx["Nginx (Reverse Proxy)<br>:80 / :443 + SSL"]
                     App["FastAPI (Uvicorn)<br>:8000 via systemd"]

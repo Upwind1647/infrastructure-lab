@@ -34,7 +34,7 @@ Deploying a lightweight Kubernetes distribution (K3s) into the private subnets a
 **1. Bootstrap the Server:**
 ```bash
 apt update && apt install -y curl && curl -O https://raw.githubusercontent.com/Upwind1647/infrastructure-lab/main/scripts/setup_me.sh && bash setup_me.sh
-``` 
+```
 
 **2. Restore the Application**
 ```bash

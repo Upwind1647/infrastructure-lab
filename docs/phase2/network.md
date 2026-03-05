@@ -44,7 +44,7 @@ graph TD
     %% VPC Definition
     subgraph VPC ["VPC: 10.200.0.0/20"]
         direction TB
-        
+
         %% Availability Zone A
         subgraph AZA ["AZ A (eu-central-1a)"]
             direction TB
@@ -64,7 +64,7 @@ graph TD
     classDef public fill:#1e88e5,stroke:#0d47a1,stroke-width:2px,color:#fff;
     classDef private fill:#43a047,stroke:#1b5e20,stroke-width:2px,color:#fff;
     classDef data fill:#e53935,stroke:#b71c1c,stroke-width:2px,color:#fff;
-    
+
     class PubA public;
     class PrivA private;
     class DataA data;

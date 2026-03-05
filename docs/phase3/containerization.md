@@ -19,20 +19,20 @@ graph TD
     A[Git Push / PR to main] --> B(Setup Python 3.14)
     B --> C(Linting: Black Check)
     C --> D(Build: Docker Image)
-    
+
     subgraph Versioning
         D -.-> |Tagging| T[Git Short-SHA]
     end
-    
+
     D --> E(Smoke Test)
-    
+
     subgraph Integration
         E -.-> |Health Check Loop| H[cURL localhost:8000/health<br>Max 20 Retries]
     end
-    
+
     E -->|Fail| F[Pipeline Abort]
     E -->|Pass| G{Event Type?}
-    
+
     G -->|Pull Request| I[Success - End]
     G -->|Push to main| J(Login to GHCR)
     J --> K(Push Image to Registry)

@@ -81,4 +81,3 @@ def run_watchdog():
 
 if __name__ == "__main__":
     run_watchdog()
-    
