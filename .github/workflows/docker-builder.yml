@@ -1,0 +1,77 @@
+name: Build & Smoke Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/status-api
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Run Black (Code Style)
+        run: |
+          pip install --no-cache-dir black==26.1.0
+          black --check --diff .
+
+      - name: Build Docker Image
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          IMAGE_TAG="${IMAGE_NAME}:${SHORT_SHA}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          docker build -t "${IMAGE_TAG}" .
+
+      - name: Smoke Test
+        run: |
+          docker run -d --name test-api -p 8000:8000 \
+            -e APP_ENV=ci \
+            "${IMAGE_TAG}"
+
+          # einfache Health-Check-Schleife
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Health check passed (attempt ${i}/20)"
+              break
+            fi
+            echo "Attempt ${i}/20 — waiting..."
+            sleep 1
+          done
+
+          if ! curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+            echo "Health check failed"
+            docker logs test-api || true
+            exit 1
+          fi
+
+      - name: Cleanup Test Container
+        if: always()
+        run: docker rm -f test-api 2>/dev/null || true
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: docker push "${IMAGE_TAG}"
