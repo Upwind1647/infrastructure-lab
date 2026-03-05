@@ -20,7 +20,9 @@ nav:
   - Phase 2 — Cloud:
       - Network Architecture: phase2/network.md
       - ClickOps Deployment: phase2/aws-clickops-deployment.md
-
+  - Phase 3 — Containerization:
+      - CI/CD Pipeline: phase3/containerization.md
+      
 markdown_extensions:
   - admonition
   - pymdownx.highlight

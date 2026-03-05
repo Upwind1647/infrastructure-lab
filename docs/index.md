@@ -13,12 +13,17 @@ Provision and harden a Debian LXC container on Proxmox. Deploy a Python applicat
 ### Phase 2 — Cloud Architecture
 Design an AWS VPC with network segmentation.
 - [Network Architecture](phase2/network.md)
+- [AWS Clickops Deployment](phase2/aws-clickops-deployment.md)
+
+### Phase 3 — Containerization
+Cloud-Native Builds & GHCR
+- [Containerization](phase3/containerization.md)
 
 ---
 
 ## Tech Stack
 
-`Proxmox` · `Debian LXC` · `Bash` · `Systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `MkDocs Material`
+`Proxmox` · `Debian LXC` · `Bash` · `Systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `MkDocs Material` · `Docker`
 
 ---
 
