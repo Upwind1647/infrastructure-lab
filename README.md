@@ -1,44 +1,134 @@
-# Cloud Infrastructure
+# Infrastructure Lab
+
+[![Build & Smoke Test](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml)
+[![Docs](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/publish_docs.yml/badge.svg)](https://upwind1647.github.io/infrastructure-lab/)
 
 This repository serves as a project to showcase modern infrastructure provisioning, security hardening, and cloud-native deployments. It is designed to be fully reproducible, secure by default, and treated as Infrastructure as Code (IaC).
 
-## Project Phases
-
-### Phase 1: On-Premise (Completed)
-Automating the provisioning of an Admin Box using Proxmox LXC.
-* **OS:** Debian 12
-* **Automation:** Bash scripting for zero-touch provisioning.
-* **Security:** Automating user creation and privilege escalation management.
-  * SSH Hardening (disabled root login & password auth, enforced auth via SSH keys).
-  * UFW configured as default drop with rate-limited SSH.
-* **Workload:** Deploying a containerized Python FastAPI service managed via `systemd`.
-
-### Phase 2: Cloud Architecture & Networking
-Designing and provisioning an AWS Virtual Private Cloud (VPC) with strict network segmentation (Public/Private Subnets) using Terraform.
-
-### Phase 3: Cloud-Native Workloads
-Deploying a lightweight Kubernetes distribution (K3s) into the private subnets and exposing services via an Ingress controller.
+> **Full documentation:** [upwind1647.github.io/infrastructure-lab](https://upwind1647.github.io/infrastructure-lab/)
 
 ---
 
-## Current Tech Stack
-* **Infrastructure:** Proxmox VE, AWS
-* **IaC & Automation:** Terraform, Bash, GitOps
-* **Containerization & Orchestration:** Docker, systemd, K3s
-* **Backend:** Python, FastAPI, Uvicorn
+## Architecture Overview
+
+```mermaid
+graph LR
+    Dev((Developer)) -->|git push| GH[GitHub Actions]
+    GH -->|Build & Smoke Test| GHCR[GHCR Image]
+    GHCR -->|docker pull| EC2
+
+    subgraph AWS ["AWS VPC 10.200.0.0/20"]
+        EC2["EC2 · Nginx + Watchdog"]
+    end
+
+    User((User)) -->|HTTPS| EC2
+```
+
+---
+
+## Project Phases
+
+| # | Phase | Focus | Status |
+|---|-------|-------|--------|
+| 1 | **Local Infrastructure** | Proxmox LXC, Bash hardening, systemd service | Done |
+| 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
+| 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
+| 4 | **IaC** | Terraform for VPC & EC2 provisioning | Planned |
+| 5 | **Orchestration** | K3s in Private Subnet, Ingress Controller | Planned |
+
+---
+
+## Tech Stack
+
+| Layer | Tools |
+|-------|-------|
+| **Infrastructure** | Proxmox VE, AWS (VPC, EC2) |
+| **IaC & Automation** | Bash, GitOps, Terraform |
+| **CI/CD** | GitHub Actions, GHCR |
+| **Containerization** | Docker (multi-stage), systemd, Watchdog |
+| **Backend** | Python, FastAPI, Uvicorn |
+| **Reverse Proxy & TLS** | Nginx, Certbot (Let's Encrypt) |
+| **Security** | UFW, SSH hardening, pre-commit (gitleaks, shellcheck) |
+
+---
+
+## Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| `git` | Clone the repository |
+| `docker` | Run the containerized API locally |
+| `python 3.12+` | Local development & MkDocs |
+| `curl` | Bootstrap script & health checks |
 
 ---
 
 ## Quickstart
 
-**1. Bootstrap the Server:**
+### Option A — Run the container locally
+
 ```bash
-apt update && apt install -y curl && curl -O https://raw.githubusercontent.com/Upwind1647/infrastructure-lab/main/scripts/setup_me.sh && bash setup_me.sh
+docker run -d --name status-api \
+  -p 8000:8000 \
+  -e APP_ENV=dev \
+  ghcr.io/upwind1647/status-api:<SHORT_SHA>
+
+curl http://localhost:8000/health
 ```
 
-**2. Restore the Application**
+### Option B — Full server bootstrap (Debian LXC / EC2)
+
+**1. Harden the server** *(run as root)*
+
+```bash
+apt update && apt install -y curl \
+  && curl -O https://raw.githubusercontent.com/Upwind1647/infrastructure-lab/main/scripts/setup_me.sh \
+  && bash setup_me.sh
+```
+
+**2. Deploy the application** *(as `adminsetup`)*
+
 ```bash
 git clone git@github.com:Upwind1647/infrastructure-lab.git && cd infrastructure-lab
-python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-sudo cp deploy/status-api.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now status-api.service
+bash scripts/deploy.sh
 ```
+
+**3. Verify**
+
+```bash
+curl http://localhost:8000
+# → {"message":"Hello from the Infrastructure Lab!","env":"production"}
+```
+
+---
+
+## Repository Structure
+
+```
+.
+├── app.py                          # FastAPI application
+├── Dockerfile                      # Multi-stage production build
+├── requirements.app.txt            # Runtime dependencies (pinned)
+├── requirements.txt                # Dev dependencies (MkDocs, etc.)
+├── deploy/
+│   └── status-api.service          # systemd unit (runs watchdog)
+├── scripts/
+│   ├── setup_me.sh                 # Server hardening & provisioning
+│   ├── deploy.sh                   # Zero-downtime deployment script
+│   └── watchdog.py                 # Container health monitor ("Poor Man's Kubelet")
+├── docs/                           # MkDocs source files
+├── .github/workflows/
+│   ├── docker-builder.yml          # Build, test & push to GHCR
+│   └── publish_docs.yml            # Deploy docs to GitHub Pages
+└── .pre-commit-config.yaml         # Linting & secret scanning hooks
+```
+
+---
+
+## Key Design Decisions
+
+Detailed Architecture Decision Records (ADRs) are maintained in the [documentation](https://upwind1647.github.io/infrastructure-lab/):
+
+* **[ADR-001](https://upwind1647.github.io/infrastructure-lab/phase1/adr-001-hardening-script/):** Bash over Ansible for constrained bootstrapping
+* **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
+* **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog

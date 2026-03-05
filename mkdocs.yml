@@ -22,6 +22,7 @@ nav:
       - ClickOps Deployment: phase2/aws-clickops-deployment.md
   - Phase 3 — Containerization:
       - CI/CD Pipeline: phase3/containerization.md
+      - ADR-004 Workload Architecture: phase3/adr-004-workload-architecture.md
 
 markdown_extensions:
   - admonition

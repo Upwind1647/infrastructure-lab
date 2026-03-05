@@ -18,6 +18,7 @@ Design an AWS VPC with network segmentation.
 ### Phase 3 — Containerization
 Cloud-Native Builds & GHCR
 - [Containerization](phase3/containerization.md)
+- [ADR-004: Workload Architecture](phase3/adr-004-workload-architecture.md)
 
 ---
 
