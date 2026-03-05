@@ -4,10 +4,11 @@ import socket
 import subprocess
 from datetime import datetime
 
-CONTAINER_NAME = "status-api"
-IMAGE_TAG = "your-registry/status-api:local" # Wird später durch den SHA ersetzt
-LOG_FILE = "watchdog.log"
-CHECK_INTERVAL = 5
+CONTAINER_NAME = os.getenv("WATCHDOG_CONTAINER_NAME", "status-api")
+IMAGE_TAG = os.getenv("WATCHDOG_IMAGE", "ghcr.io/upwind1647/status-api:local") 
+HOST_PORT = int(os.getenv("WATCHDOG_PORT", "8000"))
+LOG_FILE = os.getenv("WATCHDOG_LOG_FILE", "watchdog.log")
+CHECK_INTERVAL = int(os.getenv("WATCHDOG_CHECK_INTERVAL", "5"))
 
 def log_event(message):
     timestamp = datetime.now().isoformat()
@@ -54,7 +55,6 @@ def run_watchdog():
         if not is_healthy:
             log_event("CRITICAL: Health check failed or timeout. Restarting pod/container...")
             start_container()
-            # Gib dem Container kurz Zeit zum Hochfahren
             time.sleep(3) 
 
 if __name__ == "__main__":

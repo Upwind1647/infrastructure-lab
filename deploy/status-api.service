@@ -1,6 +1,7 @@
 [Unit]
-Description=Status API
-After=network.target
+Description=Watchdog Kubelet (Status API)
+After=network.target docker.service
+Requires=docker.service
 
 [Service]
 # User & Group
@@ -10,14 +11,13 @@ Group=adminsetup
 # Working Directory
 WorkingDirectory=/home/adminsetup/infrastructure-lab
 
-# env.
-Environment="APP_ENV=production"
+# from deploy.sh
+EnvironmentFile=/home/adminsetup/infrastructure-lab/.env
 
-# Python-Interpreter  VENV
-ExecStart=/home/adminsetup/infrastructure-lab/.venv/bin/python app.py
+ExecStart=/usr/bin/python3 scripts/watchdog.py
 
 # Restart Logic
-Restart=on-failure
+Restart=always
 RestartSec=5s
 StartLimitIntervalSec=60
 StartLimitBurst=5
