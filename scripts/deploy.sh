@@ -14,11 +14,11 @@ trap cleanup EXIT
 
 # Prevent concurrent deployments
 if ! ( set -o noclobber; echo $$ > "$LOCK_FILE" ) 2>/dev/null; then
-  log "❌ Deployment already running (lock: $LOCK_FILE)"
+  log "Deployment already running (lock file: $LOCK_FILE)"
   exit 1
 fi
 
-log "🚀 Starting Deployment..."
+log "Starting Deployment..."
 
 cd "$APP_DIR"
 log "🔄 Updating code from origin/main..."
@@ -40,14 +40,14 @@ log "🛠  Updating systemd service file..."
 sudo cp deploy/status-api.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
-log "♻️  Restarting service ${SERVICE_NAME}..."
+log "Restarting service ${SERVICE_NAME}..."
 sudo systemctl restart "${SERVICE_NAME}"
 
 log "🔍 Checking service health..."
 sleep 2
 
 if ! sudo systemctl is-active --quiet "${SERVICE_NAME}"; then
-  log "❌ Service is not active after restart"
+  log "Service ${SERVICE_NAME} is not active after restart"
   sudo systemctl status "${SERVICE_NAME}" --no-pager || true
   exit 1
 fi
@@ -56,7 +56,7 @@ fi
 HEALTH_OK=false
 for i in {1..10}; do
   if curl -sf "${HEALTH_URL}" > /dev/null 2>&1; then
-    log "✅ Health check passed (attempt ${i}/10)"
+    log "Health check passed (attempt ${i}/10)"
     HEALTH_OK=true
     break
   fi
@@ -65,8 +65,8 @@ for i in {1..10}; do
 done
 
 if [ "${HEALTH_OK}" != "true" ]; then
-  log "❌ Health endpoint did not become ready"
+  log "Health endpoint did not become ready after 20 seconds"
   exit 1
 fi
 
-log "✅ Deployment complete."
+log "Deployment complete."

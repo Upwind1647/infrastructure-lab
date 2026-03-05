@@ -5,10 +5,11 @@ import subprocess
 from datetime import datetime
 
 CONTAINER_NAME = os.getenv("WATCHDOG_CONTAINER_NAME", "status-api")
-IMAGE_TAG = os.getenv("WATCHDOG_IMAGE", "ghcr.io/upwind1647/status-api:local") 
+IMAGE_TAG = os.getenv("WATCHDOG_IMAGE", "ghcr.io/upwind1647/status-api:local")
 HOST_PORT = int(os.getenv("WATCHDOG_PORT", "8000"))
 LOG_FILE = os.getenv("WATCHDOG_LOG_FILE", "watchdog.log")
 CHECK_INTERVAL = int(os.getenv("WATCHDOG_CHECK_INTERVAL", "5"))
+
 
 def log_event(message):
     timestamp = datetime.now().isoformat()
@@ -17,21 +18,38 @@ def log_event(message):
     with open(LOG_FILE, "a") as f:
         f.write(log_line)
 
+
 def start_container():
     log_event("Starting container...")
-    subprocess.run(["docker", "rm", "-f", CONTAINER_NAME],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        ["docker", "rm", "-f", CONTAINER_NAME],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
-    result = subprocess.run([
-        "docker", "run", "-d", "--name", CONTAINER_NAME,
-        "-p", "8000:8000", "-e", "APP_ENV=production", IMAGE_TAG
-    ], capture_output=True, text=True)
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            CONTAINER_NAME,
+            "-p",
+            "8000:8000",
+            "-e",
+            "APP_ENV=production",
+            IMAGE_TAG,
+        ],
+        capture_output=True,
+        text=True,
+    )
 
     if result.returncode != 0:
         log_event(f"ERROR: Container start failed: {result.stderr}")
         return False
     log_event(f"Container started: {result.stdout.strip()[:12]}")
     return True
+
 
 def check_health():
     try:
@@ -44,18 +62,23 @@ def check_health():
     except Exception:
         return False
 
+
 def run_watchdog():
     log_event("Watchdog started. Acting as Poor Man's Kubelet.")
     start_container()
-    
+
     while True:
         time.sleep(CHECK_INTERVAL)
         is_healthy = check_health()
-        
+
         if not is_healthy:
-            log_event("CRITICAL: Health check failed or timeout. Restarting pod/container...")
+            log_event(
+                "CRITICAL: Health check failed or timeout. Restarting pod/container..."
+            )
             start_container()
-            time.sleep(3) 
+            time.sleep(3)
+
 
 if __name__ == "__main__":
     run_watchdog()
+    
