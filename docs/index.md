@@ -20,6 +20,11 @@ Cloud-Native Builds & GHCR
 - [Containerization](phase3/containerization.md)
 - [ADR-004: Workload Architecture](phase3/adr-004-workload-architecture.md)
 
+### Phase 4 — Infrastructure as Code (IaC)
+Transition from manual ClickOps to fully automated, declarative provisioning using OpenTofu. Introduction of a stateful persistence layer.
+- [Infrastructure as Code](phase4/infrastructure-as-code.md)
+- [ADR-005: Managed Database](phase4/adr-005-managed-database.md)
+
 ---
 
 ## Tech Stack
