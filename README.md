@@ -18,7 +18,9 @@ graph LR
     GHCR -->|docker pull| EC2
 
     subgraph AWS ["AWS VPC 10.200.0.0/20"]
-        EC2["EC2 · Nginx + Watchdog"]
+        EC2["EC2 (Public) · Nginx + Watchdog"]
+        RDS[("RDS PostgreSQL (Data)")]
+        EC2 -->|Port 5432| RDS
     end
 
     User((User)) -->|HTTPS| EC2
@@ -33,7 +35,7 @@ graph LR
 | 1 | **Local Infrastructure** | Proxmox LXC, Bash hardening, systemd service | Done |
 | 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
 | 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
-| 4 | **IaC** | Terraform for VPC & EC2 provisioning | Planned |
+| 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
 | 5 | **Orchestration** | K3s in Private Subnet, Ingress Controller | Planned |
 
 ---
@@ -42,8 +44,8 @@ graph LR
 
 | Layer | Tools |
 |-------|-------|
-| **Infrastructure** | Proxmox VE, AWS (VPC, EC2) |
-| **IaC & Automation** | Bash, GitOps, Terraform |
+| **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS) |
+| **IaC & Automation** | Bash, GitOps, OpenTofu |
 | **CI/CD** | GitHub Actions, GHCR |
 | **Containerization** | Docker (multi-stage), systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
@@ -60,6 +62,8 @@ graph LR
 | `docker` | Run the containerized API locally |
 | `python 3.12+` | Local development & MkDocs |
 | `curl` | Bootstrap script & health checks |
+| `tofu` | OpenTofu CLI for Infrastructure as Code |
+| `aws-cli` | AWS authentication and management |
 
 ---
 
@@ -117,10 +121,17 @@ curl http://localhost:8000
 │   ├── deploy.sh                   # Zero-downtime deployment script
 │   └── watchdog.py                 # Container health monitor ("Poor Man's Kubelet")
 ├── docs/                           # MkDocs source files
+├── terraform/                      # OpenTofu IaC definitions
+│   ├── network.tf                  # VPC & Subnet topology
+│   ├── compute.tf                  # EC2 Bastion host
+│   ├── database.tf                 # RDS PostgreSQL instance
+│   └── security.tf                 # Security Groups
+├── docs/                           # MkDocs source files
 ├── .github/workflows/
 │   ├── docker-builder.yml          # Build, test & push to GHCR
 │   └── publish_docs.yml            # Deploy docs to GitHub Pages
 └── .pre-commit-config.yaml         # Linting & secret scanning hooks
+
 ```
 
 ---
@@ -132,3 +143,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-001](https://upwind1647.github.io/infrastructure-lab/phase1/adr-001-hardening-script/):** Bash over Ansible for constrained bootstrapping
 * **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
 * **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
+* **[ADR-005](https://upwind1647.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
