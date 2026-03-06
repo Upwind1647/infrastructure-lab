@@ -17,3 +17,11 @@ ENV/
 
 # mkdocs
 site/
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfplan
+.terraform.tfstate.lock.info
