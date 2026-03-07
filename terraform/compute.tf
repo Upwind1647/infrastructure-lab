@@ -1,4 +1,4 @@
-# Debian 12 AMI
+# Debian 13 AMI
 data "aws_ami" "debian" {
   most_recent = true
   owners      = ["136693071363"] # Debian AWS Account ID
@@ -51,21 +51,12 @@ resource "aws_instance" "app_server" {
   user_data = <<-EOF
               #!/bin/bash
               set -euo pipefail
-
-              # Logging: /var/log/user-data.log
               exec > >(tee /var/log/user-data.log) 2>&1
-              echo "=== Bootstrap Start: $(date) ==="
 
-              apt-get update -y
-              apt-get upgrade -y
-              apt-get install -y docker.io curl git jq
-
-              systemctl enable --now docker
-
-              # # Add the user to the docker group
-              usermod -aG docker adminsetup
-
-              echo "Bootstrap Complete: $(date)"
+              echo "=== Fetching and executing setup_me.sh ==="
+              apt-get update && apt-get install -y curl
+              curl -O https://raw.githubusercontent.com/Upwind1647/infrastructure-lab/main/scripts/setup_me.sh
+              bash setup_me.sh
               EOF
 
   user_data_replace_on_change = true
