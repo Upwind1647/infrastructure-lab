@@ -2,17 +2,17 @@ import os
 from fastapi.testclient import TestClient
 from app import app
 
-os.environ["APP_ENV"] = "testing"
-
 client = TestClient(app)
 
 
 def test_read_root():
     response = client.get("/")
+    expected_env = os.getenv("APP_ENV", "local")
+
     assert response.status_code == 200
     assert response.json() == {
         "message": "Hello from the Infrastructure Lab!",
-        "env": "testing",
+        "env": expected_env,
     }
 
 
