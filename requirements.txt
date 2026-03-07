@@ -1,5 +1,4 @@
-fastapi==0.129.0
-uvicorn==0.40.0
+-r requirements.app.txt
 mkdocs==1.6.1
 mkdocs-get-deps==0.2.0
 mkdocs-material==9.7.3
