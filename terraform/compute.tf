@@ -5,7 +5,7 @@ data "aws_ami" "debian" {
 
   filter {
     name   = "name"
-    values = ["debian-12-amd64-*"]
+    values = ["debian-13-amd64-*"]
   }
 
   filter {
@@ -63,7 +63,7 @@ resource "aws_instance" "app_server" {
               systemctl enable --now docker
 
               # # Add the user to the docker group
-              usermod -aG docker admin
+              usermod -aG docker adminsetup
 
               echo "Bootstrap Complete: $(date)"
               EOF

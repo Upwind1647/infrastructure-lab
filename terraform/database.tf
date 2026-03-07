@@ -6,7 +6,7 @@ resource "aws_db_instance" "postgres" {
 
   allocated_storage = 20
   storage_type      = "gp3"
-  storage_encrypted = true # Data-at-rest Verschlüsselung
+  storage_encrypted = true # Data-at-rest encryption
 
   db_name  = "appdb"
   username = "dbadmin"
@@ -16,10 +16,10 @@ resource "aws_db_instance" "postgres" {
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   publicly_accessible    = false
-  multi_az               = false # Lab: kein HA nötig
+  multi_az               = false
 
   # Backups
-  backup_retention_period = 0 # Lab: keine Backups, spart Kosten
+  backup_retention_period = 0 # Lab: no backups to minimize cost
 
   # Maintenance
   auto_minor_version_upgrade = true
