@@ -16,15 +16,17 @@ The workflow differentiates between Pull Requests (Build & Test only) and Pushes
 
 ```mermaid
 graph TD
-    A[Git Push / PR to main] --> B(Setup Python 3.14)
-    B --> C(Linting: Black Check)
+    A[Git Push / PR to main] --> B(Setup Python 3.12)
+    B --> T1(Unit Tests: pytest)
+    T1 --> C(Linting: Black Check)
     C --> D(Build: Docker Image)
 
     subgraph Versioning
         D -.-> |Tagging| T[Git Short-SHA]
     end
 
-    D --> E(Smoke Test)
+    D --> Sec(Security Scan: Trivy)
+    Sec --> E(Smoke Test)
 
     subgraph Integration
         E -.-> |Health Check Loop| H[cURL localhost:8000/health<br>Max 20 Retries]

@@ -51,7 +51,7 @@ graph LR
 | **Containerization** | Docker (multi-stage), systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
 | **Reverse Proxy & TLS** | Nginx, Certbot (Let's Encrypt) |
-| **Security** | UFW, SSH hardening, pre-commit (gitleaks, shellcheck) |
+| **Security & Testing** | UFW, pre-commit, Trivy, pytest |
 
 ---
 
@@ -121,6 +121,7 @@ curl http://localhost:8000
 │   ├── setup_me.sh                 # Server hardening & provisioning
 │   ├── deploy.sh                   # Zero-downtime deployment script
 │   └── watchdog.py                 # Container health monitor ("Poor Man's Kubelet")
+├── tests/                          # Unit tests (pytest)
 ├── docs/                           # MkDocs source files
 ├── terraform/                      # OpenTofu IaC definitions
 │   ├── network.tf                  # VPC & Subnet topology
