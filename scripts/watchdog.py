@@ -35,7 +35,7 @@ def start_container():
             "--name",
             CONTAINER_NAME,
             "-p",
-            "8000:8000",
+            f"{HOST_PORT}:{8000}",
             "-e",
             "APP_ENV=production",
             IMAGE_TAG,
@@ -55,7 +55,7 @@ def check_health():
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(2)
-            s.connect(("localhost", 8000))
+            s.connect(("localhost", HOST_PORT))
             s.sendall(b"GET /health HTTP/1.0\r\nHost: localhost\r\n\r\n")
             response = s.recv(1024).decode("utf-8")
             return "200 OK" in response
