@@ -2,6 +2,7 @@
 
 [![Build & Smoke Test](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml)
 [![Docs](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/publish_docs.yml/badge.svg)](https://upwind1647.github.io/infrastructure-lab/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://upwind1647.github.io/infrastructure-lab/LICENSE)
 
 This repository serves as a project to showcase modern infrastructure provisioning, security hardening, and cloud-native deployments. It is designed to be fully reproducible, secure by default, and treated as Infrastructure as Code (IaC).
 
@@ -144,3 +145,5 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
 * **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
 * **[ADR-005](https://upwind1647.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
+
+---
