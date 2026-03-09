@@ -29,6 +29,7 @@ nav:
   - Phase 5 — Orchestration:
       - ADR-006 Lightweight Kubernetes (K3s) on Proxmox VM: phase5/adr-006-k3s.md
       - K3s Architecture on Proxmox VM: phase5/k3s-architecture.md
+      - ADR-007 Infrastructure as Code for Proxmox: phase5/adr-007-proxmox-iac.md
 
 markdown_extensions:
   - admonition
