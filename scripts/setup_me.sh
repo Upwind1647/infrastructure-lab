@@ -39,23 +39,22 @@ fi
 chmod 700 "$SSH_DIR"
 chown "$USERNAME":"$USERNAME" "$SSH_DIR"
 
-# Install basic packages (idempotent enough)
+# Install basic packages
 if ! command -v sudo &>/dev/null \
    || ! command -v curl &>/dev/null \
    || ! command -v git &>/dev/null \
-   || ! command -v docker &>/dev/null \
    || ! command -v ufw &>/dev/null; then
-    echo "Installing sudo, curl, git, python3-venv, docker.io and ufw..."
+    echo "Installing sudo, curl, git, python3-venv, and ufw..."
     apt-get update
-    apt-get install -y sudo curl git python3-venv docker.io ufw
+    apt-get install -y sudo curl git python3-venv ufw
 fi
 
-# Add user to sudo and docker group
-if groups "$USERNAME" | grep -q "\bsudo\b" && groups "$USERNAME" | grep -q "\bdocker\b"; then
-    echo "$USERNAME already in sudo and docker groups."
+# Add user to sudo group
+if groups "$USERNAME" | grep -q "\bsudo\b"; then
+    echo "$USERNAME already in sudo group."
 else
-    echo "Adding $USERNAME to sudo and docker"
-    usermod -aG sudo,docker "$USERNAME"
+    echo "Adding $USERNAME to sudo"
+    usermod -aG sudo "$USERNAME"
 fi
 
 # NOPASSWD for $USERNAME
@@ -147,7 +146,7 @@ else
     echo "Disabled SSH password authentication."
 fi
 
-# Optional: X11 forwarding aus
+# Disable X11 forwarding
 if grep -qE "^\s*X11Forwarding\s+no" "$SSH_CONFIG"; then
     echo "X11 forwarding already disabled."
 else
@@ -161,7 +160,7 @@ else
     echo "Disabled X11 forwarding for SSH."
 fi
 
-# Optional: MaxAuthTries reduzieren
+# Reduce MaxAuthTries
 if grep -qE "^\s*MaxAuthTries\s+3" "$SSH_CONFIG"; then
     echo "MaxAuthTries already set to 3."
 else
@@ -182,7 +181,7 @@ ufw default deny incoming > /dev/null
 ufw default allow outgoing > /dev/null
 ufw limit ssh > /dev/null
 
-# Allow Status-API port (for Docker / FastAPI)
+# Allow Status-API port
 ufw allow "${APP_PORT}"/tcp > /dev/null
 
 # Enable UFW
