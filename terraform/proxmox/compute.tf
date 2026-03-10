@@ -16,6 +16,8 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
   source_raw {
     data      = <<-EOF
       #cloud-config
+      hostname: k3s-master
+      manage_etc_hosts: true
       package_update: true
       packages:
         - curl
