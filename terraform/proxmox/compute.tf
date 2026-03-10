@@ -27,9 +27,26 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
             #!/usr/bin/env bash
             set -euo pipefail
             exec > >(tee /var/log/user-data.log) 2>&1
-            echo "=== Fetching and executing setup_me.sh ==="
+
+            echo "AdminBox Setup"
             curl -fsSLO https://raw.githubusercontent.com/Upwind1647/infrastructure-lab/main/scripts/setup_me.sh
             bash setup_me.sh
+
+            echo "Docker install"
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            usermod -aG docker adminsetup
+
+            echo "k3s install"
+            ufw allow 6443/tcp
+            curl -sfL https://get.k3s.io | sh -
+
+            echo "permissions Kubeconfig"
+            mkdir -p /home/adminsetup/.kube
+            cp /etc/rancher/k3s/k3s.yaml /home/adminsetup/.kube/config
+            chown -R adminsetup:adminsetup /home/adminsetup/.kube
+            chmod 600 /home/adminsetup/.kube/config
+
       runcmd:
         - [ systemctl, enable, --now, qemu-guest-agent ]
         - [ bash, /usr/local/bin/bootstrap.sh ]
