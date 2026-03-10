@@ -36,14 +36,14 @@ WATCHDOG_IMAGE=ghcr.io/upwind1647/status-api:${SHORT_SHA}
 WATCHDOG_PORT=8000
 EOF
 
-log "🛠  Updating systemd service file..."
+log "Updating systemd service file..."
 sudo cp deploy/status-api.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
 log "Restarting service ${SERVICE_NAME}..."
 sudo systemctl restart "${SERVICE_NAME}"
 
-log "🔍 Checking service health..."
+log "Checking service health..."
 sleep 2
 
 if ! sudo systemctl is-active --quiet "${SERVICE_NAME}"; then
