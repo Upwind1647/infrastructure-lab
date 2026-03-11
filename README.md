@@ -17,6 +17,7 @@ graph LR
     Dev((Developer)) -->|git push| GH[GitHub Actions]
     GH -->|Build & Smoke Test| GHCR[GHCR Image]
     GHCR -->|docker pull| EC2
+    GHCR -->|docker pull| K3S
 
     subgraph AWS ["AWS VPC 10.200.0.0/20"]
         EC2["EC2 (Public) · Nginx + Watchdog"]
@@ -24,7 +25,12 @@ graph LR
         EC2 -->|Port 5432| RDS
     end
 
+    subgraph Proxmox ["Proxmox VE (Local)"]
+        K3S["K3s Node (Debian 13)"]
+    end
+
     User((User)) -->|HTTPS| EC2
+    User -->|kubectl| K3S
 ```
 
 ---
@@ -37,7 +43,7 @@ graph LR
 | 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
 | 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
 | 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
-| 5 | **Orchestration** | K3s in Private Subnet, Ingress Controller | Planned |
+| 5 | **Orchestration** | K3s on Proxmox VM, Ingress | In Progress |
 
 ---
 
@@ -46,12 +52,13 @@ graph LR
 | Layer | Tools |
 |-------|-------|
 | **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS) |
-| **IaC & Automation** | Bash, GitOps, OpenTofu |
+| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init |
 | **CI/CD** | GitHub Actions, GHCR |
 | **Containerization** | Docker (multi-stage), systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
 | **Reverse Proxy & TLS** | Nginx, Certbot (Let's Encrypt) |
 | **Security & Testing** | UFW, pre-commit, Trivy, pytest |
+| **Orchestration** | Kubernetes (K3s), kubectl |
 
 ---
 
@@ -65,12 +72,13 @@ graph LR
 | `curl` | Bootstrap script & health checks |
 | `tofu` | OpenTofu CLI for Infrastructure as Code |
 | `aws-cli` | AWS authentication and management |
+| `kubectl` | Manage the Kubernetes cluster |
 
 ---
 
 ## Quickstart
 
-### Option A — Run the container locally
+### Option A: Run the container locally
 
 ```bash
 docker run -d --name status-api \
@@ -81,7 +89,7 @@ docker run -d --name status-api \
 curl http://localhost:8000/health
 ```
 
-### Option B — Full server bootstrap (Debian LXC / EC2)
+### Option B: Full server bootstrap (Debian LXC / EC2)
 
 **1. Harden the server** *(run as root)*
 
@@ -105,35 +113,40 @@ curl http://localhost:8000
 # → {"message":"Hello from the Infrastructure Lab!","env":"production"}
 ```
 
+### Option C: Proxmox K3s Cluster via OpenTofu
+
+**1. Provision Infrastructure & Apps**
+```bash
+cd terraform/proxmox
+tofu init
+tofu apply -auto-approve
+```
+
+**2. Configure Local Kubectl Access**
+```bash
+export K3S_IP="<YOUR_VM_IP>"
+mkdir -p ~/.kube
+ssh adminsetup@$K3S_IP "cat /home/adminsetup/.kube/config" > ~/.kube/config
+sed -i "s/127.0.0.1/$K3S_IP/g" ~/.kube/config
+chmod 600 ~/.kube/config
+kubectl get nodes
+```
+
 ---
 
 ## Repository Structure
 
 ```
 .
-├── app.py                          # FastAPI application
-├── Dockerfile                      # Multi-stage production build
-├── requirements.app.txt            # Runtime dependencies (pinned)
-├── requirements.txt                # Dev dependencies (MkDocs, etc.)
-├── deploy/
-│   └── status-api.service          # systemd unit (runs watchdog)
-├── scripts/
-│   ├── setup_me.sh                 # Server hardening & provisioning
-│   ├── deploy.sh                   # Zero-downtime deployment script
-│   └── watchdog.py                 # Container health monitor ("Poor Man's Kubelet")
-├── tests/                          # Unit tests (pytest)
-├── docs/                           # MkDocs source files
-├── terraform/                      # OpenTofu IaC definitions
-│   ├── network.tf                  # VPC & Subnet topology
-│   ├── compute.tf                  # EC2 Bastion host
-│   ├── database.tf                 # RDS PostgreSQL instance
-│   └── security.tf                 # Security Groups
-├── docs/                           # MkDocs source files
-├── .github/workflows/
-│   ├── docker-builder.yml          # Build, test & push to GHCR
-│   └── publish_docs.yml            # Deploy docs to GitHub Pages
-└── .pre-commit-config.yaml         # Linting & secret scanning hooks
-
+├── deploy/                 # systemd units & watchdog scripts
+├── docs/                   # MkDocs documentation source
+├── scripts/                # Bash scripts for CI/CD & Server Hardening
+├── terraform/              # IaC (OpenTofu)
+│   ├── aws/                # VPC, EC2, RDS
+│   └── proxmox/            # K3s Node (Proxmox local)
+├── tests/                  # Unit tests (pytest)
+├── app.py                  # FastAPI application entrypoint
+└── Dockerfile              # Multi-stage production build
 ```
 
 ---
@@ -146,3 +159,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
 * **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
 * **[ADR-005](https://upwind1647.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
+* **[ADR-006](https://upwind1647.github.io/infrastructure-lab/phase5/adr-006-k3s/):** Lightweight Kubernetes (K3s) on Proxmox VM
