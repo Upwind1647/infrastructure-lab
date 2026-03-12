@@ -46,6 +46,7 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
             echo "permissions Kubeconfig"
             mkdir -p /home/adminsetup/.kube
             cp /etc/rancher/k3s/k3s.yaml /home/adminsetup/.kube/config
+            sed -i "s/127.0.0.1/$(hostname -I | awk '{print $1}')/g" /home/adminsetup/.kube/config
             chown -R adminsetup:adminsetup /home/adminsetup/.kube
             chmod 600 /home/adminsetup/.kube/config
 
