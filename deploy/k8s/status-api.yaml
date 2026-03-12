@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-api-deployment
+  labels:
+    app: status-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: status-api
+  template:
+    metadata:
+      labels:
+        app: status-api
+    spec:
+      containers:
+      - name: status-api
+        image: ghcr.io/upwind1647/status-api:6694c5a
+        ports:
+        - containerPort: 8000
+        env:
+        - name: APP_ENV
+          value: "cluster"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "250m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: status-api-service
+spec:
+  selector:
+    app: status-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
