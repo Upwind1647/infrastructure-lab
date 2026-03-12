@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
 import uvicorn
+import redis
 
 
 # JSON Formatter for Logging
@@ -31,6 +32,10 @@ logger.setLevel(logging.INFO)  # Default log level set to INFO
 
 # Reads the "APP_ENV" to determine the current environment
 APP_ENV = os.getenv("APP_ENV")
+
+# Redis Config
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+redis_client = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
 
 # Application Lifespan Event Management
@@ -68,6 +73,17 @@ def health_check():
 @app.get("/metrics")
 def metrics():
     return {"cpu_usage": 12, "memory_usage": "45MB", "requests_total": 105}
+
+
+# Count endpoint hits using Redis
+@app.get("/hits")
+def read_hits():
+    try:
+        hits = redis_client.incr("visitor_hits")  # Increment hit counter
+        return {"message": "Redis is working!", "hits": hits}
+    except redis.exceptions.ConnectionError:  # Redis unavailable
+        logger.error("Failed to connect to Redis at %s", REDIS_HOST)
+        return {"message": "Redis connection failed", "hits": None}
 
 
 # Application entrypoint
