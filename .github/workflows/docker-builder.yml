@@ -31,7 +31,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.12'
 
       # Install dependencies from lockfile
       - name: Install Dependencies
@@ -55,7 +55,7 @@ jobs:
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
           docker build -t "${IMAGE_TAG}" .
 
-      # Scan the image for  vulnerabilities
+      # Scan the image for vulnerabilities
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:

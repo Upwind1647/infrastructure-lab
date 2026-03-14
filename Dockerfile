@@ -1,47 +1,44 @@
-# Build dependencies and virtualenv using uv in an isolated stage
-FROM python:3.14-slim AS builder
+FROM python:3.12-slim AS builder
 
-# Copy uv CLI (fast Python package manager)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Bring  uv CLI into the image
+COPY --from=ghcr.io/astral-sh/uv:0.4.24 /uv /uvx /bin/
 
 WORKDIR /app
 
-# Set environment to optimize for Docker and bytecode
+# Optimizations for Docker and bytecode, and exclude dev dependencies
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NO_DEV=1 \
     PYTHONUNBUFFERED=1
 
-# Copy only dependency metadata for layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies into a dedicated virtualenv
-RUN uv venv /opt/venv && \
-    VIRTUAL_ENV=/opt/venv uv sync --frozen --no-dev --no-install-project
+# Install dependencies
+RUN uv sync --frozen --no-install-project
 
-# Final runtime image
 FROM python:3.14-slim AS runner
 
 WORKDIR /app
 
-# Ensure Python output is unbuffered and venv is active
+# Use the  environment under /app/.venv
 ENV PYTHONUNBUFFERED=1 \
-    PATH="/opt/venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH"
 
-# Create a non-root user for security
+# Non-root user
 RUN groupadd -r appgroup && \
     useradd -r -g appgroup -d /app -s /usr/sbin/nologin appuser
 
-# Copy virtualenv from builder stage, plus the application code
-COPY --from=builder /opt/venv /opt/venv
+# Copy the virtual environment and the application
+COPY --from=builder /app/.venv /app/.venv
 COPY --chown=appuser:appgroup app.py .
 
 USER appuser
 
 EXPOSE 8000
 
-# Container healthcheck on /health endpoint
+# Container healthcheck using the /health endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
-# Start API server with Uvicorn
+# Start the FastAPI application via Uvicorn
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
