@@ -47,6 +47,7 @@ kind: Ingress
 metadata:
   name: status-api-ingress
 spec:
+  ingressClassName: traefik
   rules:
   - http:
       paths:
