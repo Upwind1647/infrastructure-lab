@@ -8,3 +8,11 @@ dependencies = [
     "redis>=7.3.0",
     "uvicorn>=0.41.0",
 ]
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "httpx>=0.28.1",
+    "mkdocs>=1.6.1",
+    "pytest>=9.0.2",
+]

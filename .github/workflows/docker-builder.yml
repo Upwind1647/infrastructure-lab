@@ -14,30 +14,40 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
-      packages: write
+      contents: read         # necessary for checkout
+      packages: write        # necessary to push Docker image
 
     steps:
+      # Get repository code
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.14'
 
-      - name: Install Dependencies & Run Tests
+      # Install dependencies from lockfile
+      - name: Install Dependencies
+        run: uv sync --frozen
+
+      # Run test suite
+      - name: Run Tests
         env:
           APP_ENV: ci
-        run: |
-          pip install -r requirements.txt
-          python -m pytest tests/
+        run: uv run pytest tests/
 
+      # Enforce code style checks
       - name: Run Black (Code Style)
-        run: |
-          pip install --no-cache-dir black==26.1.0
-          black --check --diff .
+        run: uv run black --check --diff .
 
+      # Build Docker image and tag with SHA
       - name: Build Docker Image
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
@@ -45,6 +55,7 @@ jobs:
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
           docker build -t "${IMAGE_TAG}" .
 
+      # Scan the image for  vulnerabilities
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -55,19 +66,20 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
+      # Launch container, check /health endpoint
       - name: Smoke Test
         run: |
           docker run -d --name test-api -p 8000:8000 \
             -e APP_ENV=ci \
             "${IMAGE_TAG}"
 
-          # einfache Health-Check-Schleife
+          # Wait up to 20s for healthy response
           for i in $(seq 1 20); do
             if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
               echo "Health check passed (attempt ${i}/20)"
               break
             fi
-            echo "Attempt ${i}/20 — waiting..."
+            echo "Attempt ${i}/20 - waiting..."
             sleep 1
           done
 
@@ -77,6 +89,7 @@ jobs:
             exit 1
           fi
 
+      # Remove test container
       - name: Cleanup Test Container
         if: always()
         run: docker rm -f test-api 2>/dev/null || true
