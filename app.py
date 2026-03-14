@@ -4,7 +4,7 @@ import logging
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 import uvicorn
 import redis
 
@@ -80,10 +80,12 @@ def metrics():
 def read_hits():
     try:
         hits = redis_client.incr("visitor_hits")  # Increment hit counter
-        return {"message": "Redis is working!", "hits": hits}
+        return {"message": "Redis is working", "hits": hits}
     except redis.exceptions.ConnectionError:  # Redis unavailable
         logger.error("Failed to connect to Redis at %s", REDIS_HOST)
-        return {"message": "Redis connection failed", "hits": None}
+        raise HTTPException(
+            status_code=503, detail="Redis connection failed"
+        )  # Raise an HTTP 503 error if there is a Redis connection failure
 
 
 # Application entrypoint
