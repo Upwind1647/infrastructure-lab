@@ -14,19 +14,19 @@ theme:
 
 nav:
   - Home: index.md
-  - Phase 1 — Local:
+  - "Phase 1: Local":
       - Admin Box: phase1/admin-box.md
       - ADR-001 Hardening Script: phase1/adr-001-hardening-script.md
-  - Phase 2 — Cloud:
+  - "Phase 2: Cloud":
       - Network Architecture: phase2/network.md
       - ClickOps Deployment: phase2/aws-clickops-deployment.md
-  - Phase 3 — Containerization:
+  - "Phase 3: Containerization":
       - CI/CD Pipeline: phase3/containerization.md
       - ADR-004 Workload Architecture: phase3/adr-004-workload-architecture.md
-  - Phase 4 — Infrastructure as Code (IaC):
+  - "Phase 4: Infrastructure as Code (IaC)":
       - Infrastructure as Code: phase4/infrastructure-as-code.md
       - ADR-005 Managed Database: phase4/adr-005-managed-database.md
-  - Phase 5 — Orchestration:
+  - "Phase 5: Orchestration":
       - ADR-006 Lightweight Kubernetes (K3s) on Proxmox VM: phase5/adr-006-k3s.md
       - K3s Architecture on Proxmox VM: phase5/k3s-architecture.md
       - ADR-007 Infrastructure as Code for Proxmox: phase5/adr-007-proxmox-iac.md

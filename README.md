@@ -43,7 +43,7 @@ graph LR
 | 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
 | 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
 | 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
-| 5 | **Orchestration** | K3s on Proxmox VM, Ingress | In Progress |
+| 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
 
 ---
 
@@ -52,9 +52,9 @@ graph LR
 | Layer | Tools |
 |-------|-------|
 | **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS) |
-| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init |
+| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init, uv |
 | **CI/CD** | GitHub Actions, GHCR |
-| **Containerization** | Docker (multi-stage), systemd, Watchdog |
+| **Containerization** | Docker, systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
 | **Reverse Proxy & TLS** | Nginx, Certbot (Let's Encrypt) |
 | **Security & Testing** | UFW, pre-commit, Trivy, pytest |

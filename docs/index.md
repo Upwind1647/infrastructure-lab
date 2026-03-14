@@ -4,32 +4,39 @@
 
 ## Project Phases
 
-### Phase 1 — Local Infrastructure
+### Phase 1: Local Infrastructure
 Provision and harden a Debian LXC container on Proxmox. Deploy a Python application managed by Systemd.
 
 - [Admin Box Setup](phase1/admin-box.md)
 - [ADR-001: Hardening Script](phase1/adr-001-hardening-script.md)
 
-### Phase 2 — Cloud Architecture
+### Phase 2: Cloud Architecture
 Design an AWS VPC with network segmentation.
 - [Network Architecture](phase2/network.md)
 - [AWS Clickops Deployment](phase2/aws-clickops-deployment.md)
 
-### Phase 3 — Containerization
+### Phase 3: Containerization
 Cloud-Native Builds & GHCR
 - [Containerization](phase3/containerization.md)
 - [ADR-004: Workload Architecture](phase3/adr-004-workload-architecture.md)
 
-### Phase 4 — Infrastructure as Code (IaC)
+### Phase 4: Infrastructure as Code (IaC)
 Transition from manual ClickOps to fully automated, declarative provisioning using OpenTofu. Introduction of a stateful persistence layer.
 - [Infrastructure as Code](phase4/infrastructure-as-code.md)
 - [ADR-005: Managed Database](phase4/adr-005-managed-database.md)
+
+### Phase 5: Orchestration
+Lightweight Kubernetes (K3s) on a Proxmox VM, IaC for Proxmox, and workload orchestration.
+- [ADR-006: Lightweight Kubernetes (K3s) on Proxmox VM](phase5/adr-006-k3s.md)
+- [K3s Architecture on Proxmox VM](phase5/k3s-architecture.md)
+- [ADR-007: IaC for Proxmox](phase5/adr-007-proxmox-iac.md)
+- [Kubernetes](phase5/kubernetes.md)
 
 ---
 
 ## Tech Stack
 
-`Proxmox` · `Debian LXC` · `Bash` · `Systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `MkDocs Material` · `Docker`
+`Proxmox` · `Debian LXC` · `Bash` · `Systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `uv` · `Docker`
 
 ---
 
@@ -42,18 +49,11 @@ lxc exec admin-box -- bash /root/setup_me.sh
 # 2. SSH into the container using the newly provisioned user
 ssh adminsetup@<container-ip>
 
-# 3. Clone the repository and set up the application environment
+# 3. Clone the repository and run the automated deployment
 git clone https://github.com/Upwind1647/infrastructure-lab.git
 cd infrastructure-lab
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+bash scripts/deploy.sh
 
-# 4. Install and start the Systemd service
-sudo cp deploy/status-api.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now status-api.service
-
-# 5. Verify application is running locally and reachable via UFW
+# 4. Verify application is running locally via Docker and reachable via UFW
 curl localhost:8000
 ```
