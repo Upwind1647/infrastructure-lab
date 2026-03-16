@@ -44,7 +44,6 @@ graph LR
 | 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
 | 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
 | 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
-| 6 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
 
 ---
 
