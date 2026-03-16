@@ -1,5 +1,6 @@
 FROM python:3.12-slim AS builder
 
+
 # Bring  uv CLI into the image
 COPY --from=ghcr.io/astral-sh/uv:0.4.24 /uv /uvx /bin/
 
@@ -18,6 +19,11 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
 FROM python:3.12-slim AS runner
+
+# Security Patching
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
