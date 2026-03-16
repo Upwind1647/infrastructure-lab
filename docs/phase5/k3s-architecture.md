@@ -18,7 +18,7 @@ K3s achieves its lightweight footprint through several architectural choices:
 ```mermaid
 graph TD
     subgraph Proxmox Host ["Proxmox VE (Ryzen 5)"]
-        subgraph K3s VM ["Debian 12 VM (2 Cores, 4GB RAM)"]
+        subgraph K3s VM ["Debian 13 VM (2 Cores, 4GB RAM)"]
 
             subgraph K3s Server ["K3s Server Process (Control Plane)"]
                 API["API Server"]

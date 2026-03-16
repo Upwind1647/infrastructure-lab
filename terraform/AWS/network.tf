@@ -45,7 +45,7 @@ resource "aws_route_table_association" "public_a" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# Private Subnets (Application Layer -> K3s / App Workloads)
+# Private Subnets (Application Layer -> EKS / App Workloads)
 # No internet access without a NAT Gateway
 resource "aws_subnet" "private_a" {
   vpc_id            = aws_vpc.main.id

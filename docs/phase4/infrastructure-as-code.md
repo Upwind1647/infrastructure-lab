@@ -24,7 +24,7 @@ graph TD
 
         subgraph VPC ["VPC: 10.200.0.0/20"]
             subgraph PubA ["Public Subnet A (/24)"]
-                EC2["EC2 Bastion Server<br>Debian 12 + Docker"]
+                EC2["EC2 Bastion Server<br>Debian 13 + Docker"]
             end
 
             subgraph DataA ["Data Subnet A (/24)"]
