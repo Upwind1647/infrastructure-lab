@@ -31,23 +31,32 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)  # Default log level set to INFO
 
 # Reads the "APP_ENV" to determine the current environment
-APP_ENV = os.getenv("APP_ENV")
+APP_ENV = os.getenv("APP_ENV", "local")
 
 # Redis Config
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-redis_client = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=6379,
+    db=0,
+    decode_responses=True,
+    socket_connect_timeout=2,
+    socket_timeout=2,
+    health_check_interval=30,
+)
 
 
 # Application Lifespan Event Management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not APP_ENV:
-        # Check for environment variable
-        logger.critical("FATAL: APP_ENV not set! Exiting.")
-        raise SystemExit(1)
-
     # Log the startup event with the current environment
     logger.info("Application starting in %s mode.", APP_ENV)
+
+    try:
+        redis_client.ping()
+    except redis.exceptions.RedisError as exc:
+        logger.warning("Redis unavailable at startup (%s): %s", REDIS_HOST, exc)
+
     yield
 
     # Log the shutdown event
@@ -86,6 +95,9 @@ def read_hits():
         raise HTTPException(
             status_code=503, detail="Redis connection failed"
         )  # Raise an HTTP 503 error if there is a Redis connection failure
+    except redis.exceptions.RedisError as exc:
+        logger.error("Redis operation failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Redis unavailable")
 
 
 # Application entrypoint
