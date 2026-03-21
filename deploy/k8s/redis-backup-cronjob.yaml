@@ -65,6 +65,11 @@ spec:
               test -s "${tmp_file}"
               mv "${tmp_file}" "${final_file}"
               cp "${final_file}" "${latest_file}"
+
+              # Retention: delete old timestamped dumps to avoid filling the backup volume.
+              # Keep recent backups and the latest dump.rdb; only prune dump-*.rdb files.
+              retention_days=30
+              find "${backup_dir}" -maxdepth 1 -type f -name 'dump-*.rdb' -mtime +"${retention_days}" -print -delete || true
             volumeMounts:
             - name: backup-storage
               mountPath: /backup
