@@ -93,5 +93,8 @@ spec:
           volumes:
           - name: backup-storage
             hostPath:
+              # Must be a pre-created NVMe-backed directory/mount on the node.
+              # Using type: Directory ensures the job fails if this path is missing
+              # instead of silently writing backups to the root filesystem.
               path: /mnt/nvme-backups
-              type: DirectoryOrCreate
+              type: Directory
