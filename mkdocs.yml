@@ -31,6 +31,8 @@ nav:
       - K3s Architecture on Proxmox VM: phase5/k3s-architecture.md
       - ADR-007 Infrastructure as Code for Proxmox: phase5/adr-007-proxmox-iac.md
       - Kubernetes: phase5/kubernetes.md
+  - "Phase 6: Persistence":
+      - ADR-008 Local NVMe Persistence: phase6/adr-008-persistence.md
 
 markdown_extensions:
   - admonition

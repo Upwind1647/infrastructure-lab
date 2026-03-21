@@ -41,10 +41,10 @@ graph LR
 |---|-------|-------|--------|
 | 1 | **Local Infrastructure** | Proxmox LXC, Bash hardening, systemd service | Done |
 | 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
-| 3 | **Containerization** | Multi-stage Dockerfile, CI/CD → GHCR, Watchdog | Done |
+| 3 | **Containerization** | Multi-stage Dockerfile, CI/CD -> GHCR, Watchdog | Done |
 | 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
 | 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
-
+| 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
 ---
 
 ## Tech Stack
