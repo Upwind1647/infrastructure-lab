@@ -22,6 +22,8 @@ spec:
         env:
         - name: APP_ENV
           value: "cluster"
+        - name: REDIS_HOST
+          value: "redis-service"
         resources:
           requests:
             cpu: "100m"

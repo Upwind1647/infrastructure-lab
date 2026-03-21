@@ -5,7 +5,7 @@ The K3s clusters are currently ephemeral. If a pod crashes or the node reboots, 
 We need to separate storage from compute. To fix this, we will set up a local NVMe-backed PV for Redis and run a disaster recovery drill to ensure that we can actually restore our data.
 
 ## Decision
-We implement a local Persistent Volume (PV) and Persistent Volume Claim (PVC) using a `hostPath` configuration. Additionally, we will establish a Kubernetes CronJob for automated backups to simulate a disaster recovery protocol (DR).
+We implement persistence using dynamic volume provisioning via the K3s `local-path` StorageClass, which automatically manages local directory-backed volumes.
 
 ## Consequences
 
