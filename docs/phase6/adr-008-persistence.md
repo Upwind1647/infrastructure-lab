@@ -1,4 +1,6 @@
-## Context & Objective
+# ADR 008: Persistence & DR
+
+## Context
 The K3s clusters are currently ephemeral. If a pod crashes or the node reboots, we lose all Redis data.
 We need to separate storage from compute. To fix this, we will set up a local NVMe-backed PV for Redis and run a disaster recovery drill to ensure that we can actually restore our data.
 
