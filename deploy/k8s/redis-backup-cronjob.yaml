@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  labels:
+    app: redis-backup
+spec:
+  # Run during off-peak hours
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 180
+      template:
+        spec:
+          automountServiceAccountToken: false
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+          - name: prepare-backup-dir
+            image: busybox:1.36
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /backup
+              chown 999:999 /backup
+              chmod 700 /backup
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+
+              backup_dir="/backup"
+              ts="$(date -u +%Y%m%dT%H%M%SZ)"
+              tmp_file="${backup_dir}/dump-${ts}.rdb.tmp"
+              final_file="${backup_dir}/dump-${ts}.rdb"
+              latest_file="${backup_dir}/dump.rdb"
+
+              umask 077
+              mkdir -p "${backup_dir}"
+
+              timeout 60 redis-cli -h redis-service --rdb "${tmp_file}"
+
+              test -s "${tmp_file}"
+              mv "${tmp_file}" "${final_file}"
+              cp "${final_file}" "${latest_file}"
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+            resources:
+              requests:
+                cpu: "50m"
+                memory: "64Mi"
+              limits:
+                cpu: "200m"
+                memory: "128Mi"
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 999
+              runAsGroup: 999
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-storage
+            hostPath:
+              path: /mnt/nvme-backups
+              type: DirectoryOrCreate
