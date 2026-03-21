@@ -5,7 +5,7 @@
 ## Project Phases
 
 ### Phase 1: Local Infrastructure
-Provision and harden a Debian LXC container on Proxmox. Deploy a Python application managed by Systemd.
+Provision and harden a Debian LXC container on Proxmox. Deploy a Python application managed by systemd.
 
 - [Admin Box Setup](phase1/admin-box.md)
 - [ADR-001: Hardening Script](phase1/adr-001-hardening-script.md)
@@ -32,11 +32,16 @@ Lightweight Kubernetes (K3s) on a Proxmox VM, IaC for Proxmox, and workload orch
 - [ADR-007: IaC for Proxmox](phase5/adr-007-proxmox-iac.md)
 - [Kubernetes](phase5/kubernetes.md)
 
+### Phase 6: Persistence & Data Ops
+Stateful workloads, dynamic provisioning and disaster recovery.
+- [ADR-008: Redis Persistence & DR](phase6/adr-008-persistence.md)
+- [Redis & Disaster Recovery](phase6/redis-dr.md)
+
 ---
 
 ## Tech Stack
 
-`Proxmox` · `Debian LXC` · `Bash` · `Systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `uv` · `Docker`
+`Proxmox` · `Debian LXC` · `Bash` · `systemd` · `FastAPI` · `UFW` · `GitHub Actions` · `uv` · `Docker`
 
 ---
 

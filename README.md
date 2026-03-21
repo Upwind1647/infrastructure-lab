@@ -20,7 +20,7 @@ graph LR
     GHCR -->|docker pull| K3S
 
     subgraph AWS ["AWS VPC 10.200.0.0/20"]
-        EC2["EC2 (Public) · Nginx + Watchdog"]
+      EC2["EC2 (Public) · Watchdog + Containerized API"]
         RDS[("RDS PostgreSQL (Data)")]
         EC2 -->|Port 5432| RDS
     end
@@ -29,7 +29,7 @@ graph LR
         K3S["K3s Node (Debian 13)"]
     end
 
-    User((User)) -->|HTTPS| EC2
+    User((User)) -->|HTTP| EC2
     User -->|kubectl| K3S
 ```
 
@@ -40,9 +40,9 @@ graph LR
 | # | Phase | Focus | Status |
 |---|-------|-------|--------|
 | 1 | **Local Infrastructure** | Proxmox LXC, Bash hardening, systemd service | Done |
-| 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2, Nginx + TLS | Done |
+| 2 | **Cloud Architecture** | AWS VPC, Subnets, EC2 | Done |
 | 3 | **Containerization** | Multi-stage Dockerfile, CI/CD -> GHCR, Watchdog | Done |
-| 4 | **IaC** | OpenTofu for VPC & EC2 provisioning | Done |
+| 4 | **IaC** | OpenTofu for VPC, EC2, and RDS provisioning | Done |
 | 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
 | 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
 ---
@@ -56,7 +56,7 @@ graph LR
 | **CI/CD** | GitHub Actions, GHCR |
 | **Containerization** | Docker, systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
-| **Reverse Proxy & TLS** | Nginx, Certbot (Let's Encrypt) |
+| **Networking & Edge** | AWS Security Groups, Kubernetes Ingress (Traefik) |
 | **Security & Testing** | UFW, pre-commit, Trivy, pytest |
 | **Orchestration** | Kubernetes (K3s), kubectl |
 
@@ -142,7 +142,7 @@ kubectl get nodes
 ├── docs/                   # MkDocs documentation source
 ├── scripts/                # Bash scripts for CI/CD & Server Hardening
 ├── terraform/              # IaC (OpenTofu)
-│   ├── aws/                # VPC, EC2, RDS
+│   ├── AWS/                # VPC, EC2, RDS
 │   └── proxmox/            # K3s Node (Proxmox local)
 ├── tests/                  # Unit tests (pytest)
 ├── app.py                  # FastAPI application entrypoint
@@ -156,7 +156,9 @@ kubectl get nodes
 Detailed Architecture Decision Records (ADRs) are maintained in the [documentation](https://upwind1647.github.io/infrastructure-lab/):
 
 * **[ADR-001](https://upwind1647.github.io/infrastructure-lab/phase1/adr-001-hardening-script/):** Bash over Ansible for constrained bootstrapping
-* **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
+* **[Containerization](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
 * **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
 * **[ADR-005](https://upwind1647.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
 * **[ADR-006](https://upwind1647.github.io/infrastructure-lab/phase5/adr-006-k3s/):** Lightweight Kubernetes (K3s) on Proxmox VM
+* **[ADR-007](https://upwind1647.github.io/infrastructure-lab/phase5/adr-007-proxmox-iac/):** Infrastructure as Code for Proxmox
+* **[ADR-008](https://upwind1647.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR

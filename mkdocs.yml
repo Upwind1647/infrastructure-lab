@@ -33,6 +33,7 @@ nav:
       - Kubernetes: phase5/kubernetes.md
   - "Phase 6: Persistence":
       - ADR-008 Local NVMe Persistence: phase6/adr-008-persistence.md
+      - Redis & Disaster Recovery: phase6/redis-dr.md
 
 markdown_extensions:
   - admonition
