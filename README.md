@@ -132,6 +132,11 @@ chmod 600 ~/.kube/config
 kubectl get nodes
 ```
 
+**3. Install Cluster Addons**
+```bash
+bash scripts/bootstrap_k3s_addons.sh
+```
+
 ---
 
 ## Repository Structure

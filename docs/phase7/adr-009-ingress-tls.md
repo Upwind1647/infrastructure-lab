@@ -10,7 +10,7 @@ We evaluated two approaches for the Ingress Controller:
 
 ## Decision
 
-This time we will use the **built-in Traefik Ingress Controller** provided by K3s. Furthermore, we will install **cert-manager** to handle automated TLS certificate provisioning via Let's Encrypt.
+Furthermore, we will install cert-manager to handle automated TLS certificate provisioning. We will use a self-signed issuer for initial local validation, followed by a migration to Let's Encrypt.
 
 ## Consequences
 
