@@ -37,6 +37,11 @@ Stateful workloads, dynamic provisioning and disaster recovery.
 - [ADR-008: Redis Persistence & DR](phase6/adr-008-persistence.md)
 - [Redis & Disaster Recovery](phase6/redis-dr.md)
 
+### Phase 7: Ingress
+Expose the Status API via HTTPS using the built-in Traefik Ingress Controller and automate TLS with cert-manager.
+- [ADR-009: Ingress and Automated TLS](phase7/adr-009-ingress-tls.md)
+- [Kubernetes Port-Forwarding: Debugging](phase7/port-forwarding.md)
+
 ---
 
 ## Tech Stack
