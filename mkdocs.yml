@@ -34,6 +34,9 @@ nav:
   - "Phase 6: Persistence":
       - ADR-008 Local NVMe Persistence: phase6/adr-008-persistence.md
       - Redis & Disaster Recovery: phase6/redis-dr.md
+  - "Phase 7: Ingress":
+      - ADR-009 Ingress and Automated TLS: phase7/adr-009-ingress-tls.md
+      - Kubernetes Port-Forwarding: phase7/port-forwarding.md
 
 markdown_extensions:
   - admonition
