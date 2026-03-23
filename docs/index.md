@@ -41,6 +41,7 @@ Stateful workloads, dynamic provisioning and disaster recovery.
 Expose the Status API via HTTPS using the built-in Traefik Ingress Controller and automate TLS with cert-manager.
 - [ADR-009: Ingress and Automated TLS](phase7/adr-009-ingress-tls.md)
 - [Kubernetes Port-Forwarding: Debugging](phase7/port-forwarding.md)
+- [ADR-010: DNS-01 Challenge and Cloudflare Delegation](phase7/adr-010-dns01.md)
 
 ---
 

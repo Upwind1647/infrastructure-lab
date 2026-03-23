@@ -37,6 +37,7 @@ nav:
   - "Phase 7: Ingress":
       - ADR-009 Ingress and Automated TLS: phase7/adr-009-ingress-tls.md
       - Kubernetes Port-Forwarding: phase7/port-forwarding.md
+      - ADR-010 DNS-01 and Cloudflare: phase7/adr-010-dns01-cloudflare.md
 
 markdown_extensions:
   - admonition

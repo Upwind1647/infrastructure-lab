@@ -45,6 +45,8 @@ graph LR
 | 4 | **IaC** | OpenTofu for VPC, EC2, and RDS provisioning | Done |
 | 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
 | 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
+| 7 | **Ingress & DNS-01**| Traefik, cert-manager, DNS-01 Challenge | Done |
+
 ---
 
 ## Tech Stack
@@ -168,3 +170,5 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-006](https://upwind1647.github.io/infrastructure-lab/phase5/adr-006-k3s/):** Lightweight Kubernetes (K3s) on Proxmox VM
 * **[ADR-007](https://upwind1647.github.io/infrastructure-lab/phase5/adr-007-proxmox-iac/):** Infrastructure as Code for Proxmox
 * **[ADR-008](https://upwind1647.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR
+* **[ADR-009](https://upwind1647.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
+* **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase6/adr-010-dns01/):** Cloudflare DNS-01
