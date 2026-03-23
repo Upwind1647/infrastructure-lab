@@ -127,14 +127,13 @@ tofu apply -auto-approve
 export K3S_IP="<YOUR_VM_IP>"
 mkdir -p ~/.kube
 ssh adminsetup@$K3S_IP "cat /home/adminsetup/.kube/config" > ~/.kube/config
-sed -i "s/127.0.0.1/$K3S_IP/g" ~/.kube/config
 chmod 600 ~/.kube/config
 kubectl get nodes
 ```
 
 **3. Install Cluster Addons**
 ```bash
-bash scripts/bootstrap_k3s_addons.sh
+bash scripts/k3s_addons.sh
 ```
 
 ---
