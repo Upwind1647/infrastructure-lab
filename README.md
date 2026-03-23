@@ -136,7 +136,7 @@ kubectl get nodes
 
 **3. Install Cluster Addons**
 ```bash
-bash scripts/bootstrap_k3s_addons.sh
+bash scripts/k3s_addons.sh
 ```
 
 ---
@@ -171,4 +171,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-007](https://upwind1647.github.io/infrastructure-lab/phase5/adr-007-proxmox-iac/):** Infrastructure as Code for Proxmox
 * **[ADR-008](https://upwind1647.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR
 * **[ADR-009](https://upwind1647.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
-* **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase6/adr-010-dns01/):** Cloudflare DNS-01
+* **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
