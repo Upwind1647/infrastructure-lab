@@ -49,15 +49,15 @@ kind: Ingress
 metadata:
   name: status-api-ingress
   annotations:
-    cert-manager.io/cluster-issuer: "selfsigned-cluster-issuer"
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
 spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - lab.upwind.systems
-    secretName: status-api-tls
+    - lab.northlift.net
+    secretName: status-api-tls-prod
   rules:
-  - host: lab.upwind.systems
+  - host: lab.northlift.net
     http:
       paths:
       - path: /
