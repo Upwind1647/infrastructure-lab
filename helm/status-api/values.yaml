@@ -1,0 +1,57 @@
+# Homelab Defaults (Proxmox K3s)
+replicaCount: 2
+
+image:
+  repository: ghcr.io/upwind1647/status-api
+  tag: "0fe3e7b"
+  pullPolicy: IfNotPresent
+
+env:
+  appEnv: "cluster"
+  redisHost: "redis-service"
+
+service:
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: "traefik"
+  host: "lab.northlift.net"
+  tlsSecretName: "status-api-tls-prod"
+  clusterIssuer: "letsencrypt-production"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+  limits:
+    cpu: "250m"
+    memory: "128Mi"
+
+# Security Basics
+automountServiceAccountToken: false
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+# Probes (Health Checks)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 6
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 6
