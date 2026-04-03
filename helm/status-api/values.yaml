@@ -1,5 +1,14 @@
 # Homelab Defaults (Proxmox K3s)
 replicaCount: 2
+revisionHistoryLimit: 3
+progressDeadlineSeconds: 600
+terminationGracePeriodSeconds: 30
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1
 
 image:
   repository: ghcr.io/upwind1647/status-api
@@ -33,15 +42,19 @@ resources:
 automountServiceAccountToken: false
 securityContext:
   runAsNonRoot: true
-  runAsUser: 1000
   readOnlyRootFilesystem: true
   allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
 
 # Probes (Health Checks)
 livenessProbe:
   httpGet:
     path: /health
-    port: 8000
+    port: "http"
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 2
@@ -50,7 +63,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 8000
+    port: "http"
   initialDelaySeconds: 5
   periodSeconds: 5
   timeoutSeconds: 2

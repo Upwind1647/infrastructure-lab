@@ -12,5 +12,5 @@ spec:
     release: {{ .Release.Name }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
+      targetPort: http
       protocol: TCP
