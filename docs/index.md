@@ -6,7 +6,6 @@
 
 ### Phase 1: Local Infrastructure
 Provision and harden a Debian LXC container on Proxmox. Deploy a Python application managed by systemd.
-
 - [Admin Box Setup](phase1/admin-box.md)
 - [ADR-001: Hardening Script](phase1/adr-001-hardening-script.md)
 
@@ -42,6 +41,10 @@ Expose the Status API via HTTPS using the built-in Traefik Ingress Controller an
 - [ADR-009: Ingress and Automated TLS](phase7/adr-009-ingress-tls.md)
 - [Kubernetes Port-Forwarding: Debugging](phase7/port-forwarding.md)
 - [ADR-010: DNS-01 Challenge and Cloudflare Delegation](phase7/adr-010-dns01.md)
+
+### Phase 8: Package Management
+Migrate Kubernetes manifests into a Helm chart.
+- [ADR-011: Helm Package Management](phase8/adr-011-helm-packaging.md)
 
 ---
 

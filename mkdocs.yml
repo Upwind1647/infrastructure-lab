@@ -38,6 +38,8 @@ nav:
       - ADR-009 Ingress and Automated TLS: phase7/adr-009-ingress-tls.md
       - Kubernetes Port-Forwarding: phase7/port-forwarding.md
       - ADR-010 DNS-01 and Cloudflare: phase7/adr-010-dns01.md
+  - "Phase 8: Package Management":
+      - ADR-011 Helm Packaging: phase8/adr-011-helm-packaging.md
 
 markdown_extensions:
   - admonition

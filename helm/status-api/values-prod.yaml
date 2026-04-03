@@ -1,0 +1,17 @@
+# Overrides for Production AWS
+replicaCount: 3
+
+ingress:
+  host: "api.upwind.systems"
+  tlsSecretName: "status-api-tls-prod"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+env:
+  appEnv: "production"
