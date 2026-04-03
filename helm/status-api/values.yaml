@@ -12,7 +12,7 @@ strategy:
 
 image:
   repository: ghcr.io/upwind1647/status-api
-  tag: "0fe3e7b"
+  tag: ""
   pullPolicy: IfNotPresent
 
 env:
