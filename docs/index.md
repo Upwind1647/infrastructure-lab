@@ -43,7 +43,7 @@ Expose the Status API via HTTPS using the built-in Traefik Ingress Controller an
 - [ADR-010: DNS-01 Challenge and Cloudflare Delegation](phase7/adr-010-dns01.md)
 
 ### Phase 8: Package Management
-Kubernetes manifests into Helm Chart
+Migrate Kubernetes manifests into a Helm chart.
 - [ADR-011: Helm Package Management](phase8/adr-011-helm-packaging.md)
 
 ---
