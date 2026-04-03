@@ -42,6 +42,7 @@ resources:
 automountServiceAccountToken: false
 securityContext:
   runAsNonRoot: true
+  runAsUser: 1000
   readOnlyRootFilesystem: true
   allowPrivilegeEscalation: false
   capabilities:
