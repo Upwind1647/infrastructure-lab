@@ -46,6 +46,7 @@ graph LR
 | 5 | **Orchestration** | K3s on Proxmox VM, Ingress | Done |
 | 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
 | 7 | **Ingress & DNS-01**| Traefik, cert-manager, DNS-01 Challenge | Done |
+| 8 | **Package Management** | Helm Chart, Templates | Done |
 
 ---
 
@@ -54,7 +55,7 @@ graph LR
 | Layer | Tools |
 |-------|-------|
 | **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS) |
-| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init, uv |
+| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init, uv, Helm |
 | **CI/CD** | GitHub Actions, GHCR |
 | **Containerization** | Docker, systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
@@ -75,6 +76,7 @@ graph LR
 | `tofu` | OpenTofu CLI for Infrastructure as Code |
 | `aws-cli` | AWS authentication and management |
 | `kubectl` | Manage the Kubernetes cluster |
+| `helm` | Deploy and manage Kubernetes packages |
 
 ---
 
@@ -138,6 +140,11 @@ kubectl get nodes
 bash scripts/k3s_addons.sh
 ```
 
+**4. Deploy the Application via Helm**
+```bash
+helm install status-api-lab helm/status-api/
+```
+
 ---
 
 ## Repository Structure
@@ -146,6 +153,7 @@ bash scripts/k3s_addons.sh
 .
 ├── deploy/                 # systemd units & watchdog scripts
 ├── docs/                   # MkDocs documentation source
+├── helm/                   # Helm Charts for Kubernetes deployments
 ├── scripts/                # Bash scripts for CI/CD & Server Hardening
 ├── terraform/              # IaC (OpenTofu)
 │   ├── AWS/                # VPC, EC2, RDS
@@ -171,3 +179,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-008](https://upwind1647.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR
 * **[ADR-009](https://upwind1647.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
 * **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
+* **[ADR-011](https://upwind1647.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
