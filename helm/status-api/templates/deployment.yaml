@@ -4,33 +4,36 @@ metadata:
   name: {{ .Release.Name }}-deployment
   labels:
     app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
+      release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}
+        release: {{ .Release.Name }}
     spec:
       automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
       containers:
-      - name: {{ .Chart.Name }}
-        securityContext:
-          {{- toYaml .Values.securityContext | nindent 10 }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.service.targetPort }}
-        env:
-        - name: APP_ENV
-          value: {{ .Values.env.appEnv | quote }}
-        - name: REDIS_HOST
-          value: {{ .Values.env.redisHost | quote }}
-        resources:
-          {{- toYaml .Values.resources | nindent 10 }}
-        livenessProbe:
-          {{- toYaml .Values.livenessProbe | nindent 10 }}
-        readinessProbe:
-          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{ toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: APP_ENV
+              value: {{ .Values.env.appEnv | quote }}
+            - name: REDIS_HOST
+              value: {{ .Values.env.redisHost | quote }}
+          resources:
+            {{ toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            {{ toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{ toYaml .Values.readinessProbe | nindent 12 }}

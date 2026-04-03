@@ -8,18 +8,18 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   tls:
-  - hosts:
-    - {{ .Values.ingress.host | quote }}
-    secretName: {{ .Values.ingress.tlsSecretName }}
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
   rules:
-  - host: {{ .Values.ingress.host | quote }}
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ .Release.Name }}-service
-            port:
-              number: {{ .Values.service.port }}
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-service
+                port:
+                  number: {{ .Values.service.port }}
 {{- end }}
