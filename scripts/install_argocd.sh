@@ -57,10 +57,17 @@ fi
 helm "${HELM_ARGS[@]}"
 
 log "Waiting for ArgoCD control-plane readiness..."
-kubectl wait --for=condition=Available deployment/argocd-server -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
-kubectl wait --for=condition=Available deployment/argocd-repo-server -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
-kubectl wait --for=condition=Available deployment/argocd-applicationset-controller -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
-kubectl rollout status statefulset/argocd-application-controller -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+INSTANCE_SELECTOR="app.kubernetes.io/instance=${RELEASE_NAME}"
+SERVER_SELECTOR="${INSTANCE_SELECTOR},app.kubernetes.io/name=argocd-server"
+REPO_SERVER_SELECTOR="${INSTANCE_SELECTOR},app.kubernetes.io/name=argocd-repo-server"
+APPSET_SELECTOR="${INSTANCE_SELECTOR},app.kubernetes.io/name=argocd-applicationset-controller"
+APP_CONTROLLER_SELECTOR="${INSTANCE_SELECTOR},app.kubernetes.io/name=argocd-application-controller"
 
+kubectl wait --for=condition=Available deployment -l "${SERVER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+kubectl wait --for=condition=Available deployment -l "${REPO_SERVER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+if kubectl get deployment -l "${APPSET_SELECTOR}" -n "${NAMESPACE}" -o name | grep -q .; then
+    kubectl wait --for=condition=Available deployment -l "${APPSET_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+fi
+kubectl rollout status statefulset -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
 log "ArgoCD is installed. Bootstrap applications with:"
 log "kubectl apply -f gitops/apps/root.yaml"
