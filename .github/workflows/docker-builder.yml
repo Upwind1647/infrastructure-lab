@@ -141,7 +141,7 @@ jobs:
       - name: Update values-prod image tag
         run: |
           SHORT_SHA="${{ needs.build-test-scan.outputs.short_sha }}"
-          sed -i -E "s|^  tag:.*$|  tag: \"${SHORT_SHA}\"|" helm/status-api/values-prod.yaml
+          yq e '.image.tag = "'"${SHORT_SHA}"'"' -i helm/status-api/values-prod.yaml
 
       - name: Validate Helm Render
         run: |
