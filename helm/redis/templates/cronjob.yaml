@@ -84,4 +84,4 @@ spec:
           - name: backup-storage
             hostPath:
               path: {{ .Values.storage.backupHostPath }}
-              type: Directory
+              type: DirectoryOrCreate
