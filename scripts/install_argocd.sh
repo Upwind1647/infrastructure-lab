@@ -68,6 +68,13 @@ kubectl wait --for=condition=Available deployment -l "${REPO_SERVER_SELECTOR}" -
 if kubectl get deployment -l "${APPSET_SELECTOR}" -n "${NAMESPACE}" -o name | grep -q .; then
     kubectl wait --for=condition=Available deployment -l "${APPSET_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
 fi
-kubectl rollout status statefulset -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+if kubectl get deployment -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" -o name | grep -q .; then
+    kubectl wait --for=condition=Available deployment -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+elif kubectl get statefulset -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" -o name | grep -q .; then
+    kubectl rollout status statefulset -l "${APP_CONTROLLER_SELECTOR}" -n "${NAMESPACE}" --timeout="${ROLLOUT_TIMEOUT}"
+else
+    echo "ERROR: ArgoCD application controller not found for selector ${APP_CONTROLLER_SELECTOR} in namespace ${NAMESPACE}" >&2
+    exit 1
+fi
 log "ArgoCD is installed. Bootstrap applications with:"
 log "kubectl apply -f gitops/apps/root.yaml"
