@@ -40,6 +40,7 @@ nav:
       - ADR-010 DNS-01 and Cloudflare: phase7/adr-010-dns01.md
   - "Phase 8: Package Management":
       - ADR-011 Helm Packaging: phase8/adr-011-helm-packaging.md
+      - ADR-012 Redis Helm Chart: phase8/adr-012-redis-helm.md
 
 markdown_extensions:
   - admonition

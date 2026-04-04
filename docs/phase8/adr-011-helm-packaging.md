@@ -29,3 +29,14 @@ We will deploy the chart manually first to fully understand the templating mecha
 
 - **Template Complexity:** Go-Templating syntax (pipelines, `range`, `with`) introduces a new DSL on top of YAML, increasing cognitive overhead for contributors unfamiliar with the syntax.
 - **Debugging Overhead:** Rendering errors in templates can produce cryptic failure messages, requiring `helm template --debug` as a mandatory validation step before any apply.
+
+### Design Choice: Multi-Chart Architecture (Blast Radius)
+We explicitly separated our workloads into **multiple, isolated Helm charts** (e.g., `helm/status-api/` and `helm/redis/`) rather than using subcharts.
+* **Separation of Concerns:** Stateful infrastructure (databases) has a completely different lifecycle, risk profile, and update frequency than stateless APIs.
+* By managing them as completely independent Helm releases, we prevent accidental database deletion or disruption during routine API rollbacks, strictly minimizing the blast radius.
+
+### Operational Model: Independent Releases
+
+- **Stateless release:** `status-api-lab` is managed independently and can be upgraded or rolled back without touching Redis objects.
+- **Stateful release:** `redis-lab` is managed in its own release cycle so database changes can follow tighter review windows.
+- **Verification expectation:** `helm ls` should always show two releases for this stack (`status-api-lab` and `redis-lab`) to confirm blast-radius isolation is preserved.

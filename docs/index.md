@@ -45,6 +45,7 @@ Expose the Status API via HTTPS using the built-in Traefik Ingress Controller an
 ### Phase 8: Package Management
 Migrate Kubernetes manifests into a Helm chart.
 - [ADR-011: Helm Package Management](phase8/adr-011-helm-packaging.md)
+- [ADR-012: Migrate Redis to Helm](phase8/adr-012-redis-helm.md)
 
 ---
 

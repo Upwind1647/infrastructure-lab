@@ -140,9 +140,11 @@ kubectl get nodes
 bash scripts/k3s_addons.sh
 ```
 
-**4. Deploy the Application via Helm**
+**4. Deploy Redis and API via Helm**
 ```bash
-helm install status-api-lab helm/status-api/
+helm upgrade --install redis-lab helm/redis/
+helm upgrade --install status-api-lab helm/status-api/
+helm ls
 ```
 
 ---
@@ -180,3 +182,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-009](https://upwind1647.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
 * **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
 * **[ADR-011](https://upwind1647.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
+* **[ADR-012](https://upwind1647.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
