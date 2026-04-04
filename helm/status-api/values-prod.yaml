@@ -2,7 +2,7 @@
 replicaCount: 3
 
 image:
-  tag: ""
+  tag: "00280f7"
 
 ingress:
   host: "api.upwind.systems"
