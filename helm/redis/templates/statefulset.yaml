@@ -45,6 +45,7 @@ spec:
     - metadata:
         name: redis-data
       spec:
+        volumeMode: Filesystem
         accessModes:
           {{- toYaml .Values.storage.accessModes | nindent 10 }}
         storageClassName: {{ .Values.storage.className }}
