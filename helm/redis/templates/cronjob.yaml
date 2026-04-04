@@ -7,14 +7,14 @@ metadata:
     release: {{ .Release.Name }}
 spec:
   schedule: {{ .Values.backup.schedule | quote }}
-  concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
-  startingDeadlineSeconds: 300
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  startingDeadlineSeconds: {{ .Values.backup.startingDeadlineSeconds }}
   jobTemplate:
     spec:
-      backoffLimit: 2
-      activeDeadlineSeconds: 180
+      backoffLimit: {{ .Values.backup.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
       template:
         spec:
           automountServiceAccountToken: false
@@ -23,8 +23,8 @@ spec:
               type: RuntimeDefault
           initContainers:
             - name: prepare-backup-dir
-              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              image: "{{ .Values.backup.initContainer.image.repository }}:{{ .Values.backup.initContainer.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.initContainer.image.pullPolicy }}
               command:
                 - /bin/sh
                 - -c
@@ -58,7 +58,7 @@ spec:
 
                   umask 077
                   mkdir -p "${backup_dir}"
-                  timeout 60 redis-cli -h redis-service --rdb "${tmp_file}"
+                  timeout 60 redis-cli -h {{ default .Values.service.name .Values.backup.redisHost | quote }} --rdb "${tmp_file}"
                   test -s "${tmp_file}"
                   mv "${tmp_file}" "${final_file}"
                   cp "${final_file}" "${latest_file}"

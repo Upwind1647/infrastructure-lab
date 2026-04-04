@@ -6,7 +6,6 @@ storage:
 
 backup:
   retentionDays: 60
-  redisHost: redis-service
 
 resources:
   requests:
