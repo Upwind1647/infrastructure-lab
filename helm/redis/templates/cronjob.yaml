@@ -1,0 +1,87 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-backup
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  startingDeadlineSeconds: {{ .Values.backup.startingDeadlineSeconds }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backup.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
+      template:
+        spec:
+          automountServiceAccountToken: false
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: prepare-backup-dir
+              image: "{{ .Values.backup.initContainer.image.repository }}:{{ .Values.backup.initContainer.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.initContainer.image.pullPolicy }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  mkdir -p /backup
+                  chown 999:999 /backup
+                  chmod 700 /backup
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+          containers:
+            - name: redis-backup
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  backup_dir="/backup"
+                  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+                  tmp_file="${backup_dir}/dump-${ts}.rdb.tmp"
+                  final_file="${backup_dir}/dump-${ts}.rdb"
+                  latest_file="${backup_dir}/dump.rdb"
+
+                  umask 077
+                  mkdir -p "${backup_dir}"
+                  timeout 60 redis-cli -h {{ default .Values.service.name .Values.backup.redisHost | quote }} --rdb "${tmp_file}"
+                  test -s "${tmp_file}"
+                  mv "${tmp_file}" "${final_file}"
+                  cp "${final_file}" "${latest_file}"
+
+                  retention_days={{ .Values.backup.retentionDays }}
+                  find "${backup_dir}" -maxdepth 1 -type f -name 'dump-*.rdb' -mtime +"${retention_days}" -print -delete || true
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+              resources:
+                {{ toYaml .Values.resources | nindent 16 }}
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 999
+                runAsGroup: 999
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-storage
+              hostPath:
+                path: {{ .Values.storage.backupHostPath }}
+                type: DirectoryOrCreate
