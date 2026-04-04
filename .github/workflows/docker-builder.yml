@@ -14,13 +14,17 @@ env:
   IMAGE_NAME: ghcr.io/upwind1647/status-api
 
 jobs:
-  build-and-test:
+  build-test-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     permissions:
-      contents: write        # necessary for checkout and values write-back
-      packages: write        # necessary to push Docker image
+      contents: read         # checkout only; no write needed for build/test/scan
+      packages: write        # necessary to push Docker image to GHCR
+
+    outputs:
+      short_sha: ${{ steps.build_image.outputs.short_sha }}
+      image_tag: ${{ steps.build_image.outputs.image_tag }}
 
     steps:
       # Get repository code
@@ -60,6 +64,7 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           IMAGE_TAG="${IMAGE_NAME}:${SHORT_SHA}"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
           docker build -t "${IMAGE_TAG}" .
 
@@ -115,19 +120,29 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker push "${{ steps.build_image.outputs.image_tag }}"
 
+  update-values:
+    runs-on: ubuntu-latest
+    needs: build-test-scan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+
+    permissions:
+      contents: write        # necessary to commit the values write-back
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set Up Helm
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         uses: azure/setup-helm@v4
 
       - name: Update values-prod image tag
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
+          SHORT_SHA="${{ needs.build-test-scan.outputs.short_sha }}"
           sed -i -E "s|^  tag:.*$|  tag: \"${SHORT_SHA}\"|" helm/status-api/values-prod.yaml
-          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
 
       - name: Validate Helm Render
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         run: |
           helm template status-api-lab ./helm/status-api \
             -f ./helm/status-api/values-prod.yaml \
@@ -135,8 +150,8 @@ jobs:
             > /dev/null
 
       - name: Commit and Push values-prod tag update
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         run: |
+          SHORT_SHA="${{ needs.build-test-scan.outputs.short_sha }}"
           if git diff --quiet -- helm/status-api/values-prod.yaml; then
             echo "No values change detected; skipping commit."
             exit 0
