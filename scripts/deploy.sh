@@ -25,8 +25,8 @@ cd "$APP_DIR"
 log "Updating code from origin/main..."
 git fetch origin main --prune
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  log "Working tree has local changes; aborting to avoid destructive overwrite"
+if [ -n "$(git status --porcelain)" ]; then
+  log "Working tree is not clean (uncommitted changes or untracked files). Aborting."
   exit 1
 fi
 
