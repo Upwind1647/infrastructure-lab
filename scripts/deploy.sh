@@ -19,14 +19,30 @@ if ! ( set -o noclobber; echo $$ > "$LOCK_FILE" ) 2>/dev/null; then
 fi
 
 log "Starting Deployment..."
+log "Scope: EC2/systemd deployment only. Kubernetes workloads are managed by ArgoCD."
 
 cd "$APP_DIR"
-log "🔄 Updating code from origin/main..."
+log "Updating code from origin/main..."
 git fetch origin main --prune
-git reset --hard origin/main
+
+if [ -n "$(git status --porcelain)" ]; then
+  log "Working tree is not clean (uncommitted changes or untracked files). Aborting."
+  exit 1
+fi
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  log "Switching to main branch..."
+  git checkout main
+fi
+
+if ! git merge --ff-only origin/main; then
+  log "Fast-forward merge failed; manual intervention required"
+  exit 1
+fi
 
 SHORT_SHA=$(git rev-parse --short HEAD)
-log "🧾 Writing .env for SHA: $SHORT_SHA"
+log "Writing .env for SHA: $SHORT_SHA"
 
 # Write minimal env file for watchdog and container image tag
 cat > "$ENV_FILE" <<EOF

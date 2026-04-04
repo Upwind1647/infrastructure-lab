@@ -41,6 +41,8 @@ nav:
   - "Phase 8: Package Management":
       - ADR-011 Helm Packaging: phase8/adr-011-helm-packaging.md
       - ADR-012 Redis Helm Chart: phase8/adr-012-redis-helm.md
+  - "Phase 9: GitOps":
+      - ADR-013 GitOps with ArgoCD: phase9/adr-013-gitops-argocd.md
 
 markdown_extensions:
   - admonition

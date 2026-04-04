@@ -1,0 +1,17 @@
+# Overrides used by ArgoCD in local K3s when layering on top of values-prod.yaml.
+replicaCount: 2
+
+env:
+  appEnv: "cluster"
+
+ingress:
+  host: "lab.northlift.net"
+  tlsSecretName: "status-api-tls-prod"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+  limits:
+    cpu: "250m"
+    memory: "128Mi"

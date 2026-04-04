@@ -47,6 +47,10 @@ Migrate Kubernetes manifests into a Helm chart.
 - [ADR-011: Helm Package Management](phase8/adr-011-helm-packaging.md)
 - [ADR-012: Migrate Redis to Helm](phase8/adr-012-redis-helm.md)
 
+### Phase 9: GitOps
+Establish ArgoCD as the pull-based control plane and migrate Helm releases to declarative Applications.
+- [ADR-013: GitOps with ArgoCD](phase9/adr-013-gitops-argocd.md)
+
 ---
 
 ## Tech Stack
