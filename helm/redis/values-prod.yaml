@@ -1,0 +1,17 @@
+# Overrides for Production (AWS / EKS)
+storage:
+  size: 5Gi
+  className: gp3
+  backupHostPath: /opt/redis-backups
+
+backup:
+  retentionDays: 60
+  redisHost: redis-service
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"

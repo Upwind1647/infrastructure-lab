@@ -1,0 +1,52 @@
+# Default values for redis-lab.
+replicaCount: 1
+
+image:
+  repository: redis
+  tag: "7-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  name: redis-service
+  port: 6379
+  targetPort: 6379
+
+statefulset:
+  terminationGracePeriodSeconds: 30
+  command:
+    - redis-server
+    - --appendonly
+    - "no"
+    - --dir
+    - /data
+
+storage:
+  size: 1Gi
+  className: local-path
+  accessModes:
+    - ReadWriteOnce
+  backupHostPath: /mnt/nvme-backups
+
+backup:
+  schedule: "0 2 * * *"
+  retentionDays: 30
+  redisHost: redis-service
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  backoffLimit: 2
+  activeDeadlineSeconds: 180
+  initContainer:
+    image:
+      repository: busybox
+      tag: "1.36"
+      pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "128Mi"

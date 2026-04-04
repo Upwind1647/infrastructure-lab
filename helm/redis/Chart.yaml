@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redis-lab
+description: Helm chart for Stateful Redis and Backup CronJob
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
