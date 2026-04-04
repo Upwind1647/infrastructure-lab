@@ -59,10 +59,6 @@ server:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-production
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    extraTls:
-      - hosts:
-          - argocd.lab.northlift.net
-        secretName: argocd-server-tls
   resources:
     requests:
       cpu: 100m
