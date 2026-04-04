@@ -1,6 +1,10 @@
 # Overrides for Production AWS
 replicaCount: 3
 
+image:
+  # Managed by CI workflow after successful GHCR push.
+  tag: "bootstrap"
+
 ingress:
   host: "api.upwind.systems"
   tlsSecretName: "status-api-tls-prod"
