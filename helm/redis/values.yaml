@@ -30,7 +30,6 @@ storage:
 backup:
   schedule: "0 2 * * *"
   retentionDays: 30
-  redisHost: redis-service
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
