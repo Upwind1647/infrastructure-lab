@@ -47,6 +47,7 @@ graph LR
 | 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
 | 7 | **Ingress & DNS-01**| Traefik, cert-manager, DNS-01 Challenge | Done |
 | 8 | **Package Management** | Helm Chart, Templates | Done |
+| 9 | **GitOps** | ArgoCD App-of-Apps reconciliation | In Progress |
 
 ---
 
@@ -135,16 +136,30 @@ chmod 600 ~/.kube/config
 kubectl get nodes
 ```
 
-**3. Install Cluster Addons**
+**3. Create Cloudflare DNS Token Secret (one-time prerequisite)**
 ```bash
-bash scripts/k3s_addons.sh
+kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic cloudflare-api-token-secret \
+  --namespace=cert-manager \
+  --from-literal=api-token='<CLOUDFLARE_API_TOKEN>' \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-**4. Deploy Redis and API via Helm**
+**4. Install ArgoCD (Helm)**
 ```bash
-helm upgrade --install redis-lab helm/redis/
-helm upgrade --install status-api-lab helm/status-api/
-helm ls
+bash scripts/install_argocd.sh
+```
+
+**5. Bootstrap the full cluster state via App of Apps**
+```bash
+kubectl apply -f gitops/apps/root.yaml
+kubectl -n argocd get applications
+```
+
+**6. Verify ArgoCD UI and workload ingress**
+```bash
+kubectl get ingress -A
+# ArgoCD UI: https://argocd.lab.northlift.net
 ```
 
 ---
@@ -183,3 +198,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
 * **[ADR-011](https://upwind1647.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
 * **[ADR-012](https://upwind1647.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
+* **[ADR-013](https://upwind1647.github.io/infrastructure-lab/phase9/adr-013-gitops-argocd/):** GitOps with ArgoCD
