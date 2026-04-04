@@ -2,8 +2,7 @@
 replicaCount: 3
 
 image:
-  # Managed by CI workflow after successful GHCR push.
-  tag: "bootstrap"
+  tag: ""
 
 ingress:
   host: "api.upwind.systems"
