@@ -12,7 +12,7 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-yaml
         args: [--unsafe]
-        exclude: ^helm/status-api/templates/
+        exclude: ^helm/.*/templates/
 
   - repo: https://github.com/psf/black
     rev: 26.1.0
