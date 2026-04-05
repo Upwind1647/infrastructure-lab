@@ -83,20 +83,13 @@ kubectl -n kube-system get secret \
   -o yaml > sealed-secrets-master-key.yaml
 ```
 
-Then encrypt the backup file offline (for example with `age` or `gpg`) and store it outside this repository in offline media.
+Then encrypt the backup file offline with authenticated tooling (for example `age` or `gpg`) and store it outside this repository in offline media.
 
-If no public-key tooling is configured yet, use a local encrypted file workflow:
+Do not use `openssl enc -aes-256-cbc` for this backup workflow, because it does not provide authenticated encryption and ciphertext tampering may go undetected.
 
-```bash
-openssl rand -base64 48 > sealed-secrets-master-key.passphrase.txt
-openssl enc -aes-256-cbc -salt -pbkdf2 \
-  -in sealed-secrets-master-key.yaml \
-  -out sealed-secrets-master-key.yaml.enc \
-  -pass file:sealed-secrets-master-key.passphrase.txt
-rm -f sealed-secrets-master-key.yaml
-```
+If `age` or `gpg` is not configured yet, set up one of those tools before creating the offline encrypted backup.
 
-Store the encrypted artifact and passphrase separately in offline locations.
+Store the encrypted artifact and any recovery credentials separately in offline locations.
 
 Restore procedure (break-glass):
 
