@@ -48,6 +48,7 @@ graph LR
 | 7 | **Ingress & DNS-01**| Traefik, cert-manager, DNS-01 Challenge | Done |
 | 8 | **Package Management** | Helm Chart, Templates | Done |
 | 9 | **GitOps** | ArgoCD App-of-Apps reconciliation | In Progress |
+| 10 | **GitOps Secrets** | Sealed Secrets, encrypted token delivery | In Progress |
 
 ---
 
@@ -136,24 +137,22 @@ chmod 600 ~/.kube/config
 kubectl get nodes
 ```
 
-**3. Create Cloudflare DNS Token Secret (one-time prerequisite)**
-```bash
-kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic cloudflare-api-token-secret \
-  --namespace=cert-manager \
-  --from-literal=api-token='<CLOUDFLARE_API_TOKEN>' \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
-
-**4. Install ArgoCD (Helm)**
+**3. Install ArgoCD (Helm)**
 ```bash
 bash scripts/install_argocd.sh
 ```
 
-**5. Bootstrap the full cluster state via App of Apps**
+**4. Bootstrap the full cluster state via App of Apps**
 ```bash
 kubectl apply -f gitops/apps/root.yaml
 kubectl -n argocd get applications
+```
+
+**5. Verify encrypted secret delivery and app health**
+```bash
+kubectl -n argocd get applications sealed-secrets platform-secrets cert-manager cluster-issuers
+kubectl -n cert-manager get secret cloudflare-api-token-secret
+kubectl -n external-dns get secret cloudflare-api-token-secret
 ```
 
 **6. Verify ArgoCD UI and workload ingress**
@@ -199,3 +198,4 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-011](https://upwind1647.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
 * **[ADR-012](https://upwind1647.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
 * **[ADR-013](https://upwind1647.github.io/infrastructure-lab/phase9/adr-013-gitops-argocd/):** GitOps with ArgoCD
+* **[ADR-014](https://upwind1647.github.io/infrastructure-lab/phase10/adr-014-gitops-secrets-management-with-sealed-secrets/):** GitOps Secrets Management with Sealed Secrets
