@@ -56,7 +56,7 @@ run_step() {
 tofu_init() {
   if [ -n "${TF_BACKEND_BUCKET:-}" ]; then
     log "Initializing with S3 backend config..."
-    tofu -chdir="${TF_DIR}" init -input=false \
+    tofu -chdir="${TF_DIR}" init -force-copy -input=false \
       -backend-config="bucket=${TF_BACKEND_BUCKET}" \
       -backend-config="key=${TF_BACKEND_KEY:-aws/terraform.tfstate}" \
       -backend-config="region=${AWS_REGION:-eu-central-1}" \
@@ -64,16 +64,26 @@ tofu_init() {
       -backend-config="encrypt=true"
   else
     log "Initializing with local/default backend..."
-    tofu -chdir="${TF_DIR}" init -input=false
+    tofu -chdir="${TF_DIR}" init -force-copy -input=false
   fi
 }
 
 tofu_phase12_args() {
   [ -n "${BUDGET_ALERT_EMAIL}" ] || die "BUDGET_ALERT_EMAIL must be set for FinOps budget alerts."
+  [ -n "${TF_BACKEND_BUCKET}" ] || die "TF_BACKEND_BUCKET must be set."
+  [ -n "${TF_BACKEND_LOCK_TABLE}" ] || die "TF_BACKEND_LOCK_TABLE must be set."
 
   printf '%s\n' \
     "-var=enable_cost_budget=true" \
     "-var=enable_eks=true" \
+    "-var=enable_tofu_state_backend=true" \
+    "-var=enable_github_actions_oidc=true" \
+    "-var=tofu_state_bucket_name=${TF_BACKEND_BUCKET}" \
+    "-var=tofu_state_lock_table_name=${TF_BACKEND_LOCK_TABLE}" \
+    "-var=eks_node_instance_type=t3.micro" \
+    "-var=eks_node_desired_size=2" \
+    "-var=eks_node_max_size=3" \
+    "-var=eks_endpoint_private_access=true" \
     "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}"
 }
 

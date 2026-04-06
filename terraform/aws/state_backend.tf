@@ -61,7 +61,6 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     name = "LockID"
     type = "S"
   }
-}
 
   tags = merge(
     {
@@ -71,6 +70,7 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     },
     var.tofu_state_extra_tags,
   )
+}
 
 data "aws_caller_identity" "current" {
   count = var.enable_github_actions_oidc ? 1 : 0
@@ -115,6 +115,14 @@ resource "aws_iam_role" "github_actions_tofu" {
       }
     ]
   })
+
+  lifecycle {
+    precondition {
+      condition     = var.create_github_oidc_provider || length(trimspace(var.github_oidc_provider_arn)) > 0
+      error_message = "Set github_oidc_provider_arn when create_github_oidc_provider is false."
+    }
+  }
+}
 
 resource "aws_iam_role_policy" "github_actions_tofu_policy" {
   count = var.enable_github_actions_oidc ? 1 : 0
@@ -181,6 +189,12 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
       },
     ]
   })
+
+  lifecycle {
+    precondition {
+      condition     = length(trimspace(var.tofu_state_bucket_name)) > 0
+      error_message = "tofu_state_bucket_name must be set when enable_github_actions_oidc is true."
+    }
 
     precondition {
       condition     = length(trimspace(var.tofu_state_lock_table_name)) > 0
