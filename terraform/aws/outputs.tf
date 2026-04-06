@@ -83,3 +83,14 @@ output "eks_oidc_provider_arn" {
   description = "IAM OIDC provider ARN for IRSA"
   value       = try(aws_iam_openid_connect_provider.eks[0].arn, null)
 }
+
+output "eks_admin_access_key" {
+  description = "IAM Access Key for EKS Admin"
+  value       = try(aws_iam_access_key.eks_admin[0].id, null)
+}
+
+output "eks_admin_secret_key" {
+  description = "IAM Secret Key for EKS Admin"
+  value       = try(aws_iam_access_key.eks_admin[0].secret, null)
+  sensitive   = true
+}
