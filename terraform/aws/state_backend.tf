@@ -136,10 +136,8 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:ListBucket",
-          "s3:GetBucketLocation",
-          "s3:ListBucketVersions",
-          "s3:GetBucketPolicy",
+          "s3:List*",
+          "s3:Get*"
         ]
         Resource = [
           "arn:aws:s3:::${var.tofu_state_bucket_name}",
