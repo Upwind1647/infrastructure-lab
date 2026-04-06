@@ -94,17 +94,18 @@ jobs:
             const planPath = `${process.env.TF_ROOT}/plan.txt`;
             const fullPlan = fs.readFileSync(planPath, 'utf8');
             const clippedPlan = fullPlan.length > 60000 ? `${fullPlan.slice(0, 60000)}\n\n...truncated...` : fullPlan;
-            const body = `${marker}
-            ### Cloudflare IaC OpenTofu Plan
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`
-            ${clippedPlan}
-            \`\`\`
-
-            </details>`;
-
+            const body = [
+              marker,
+              '### Cloudflare IaC OpenTofu Plan',
+              '',
+              '<details><summary>Show Plan</summary>',
+              '',
+              '```',
+              clippedPlan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
