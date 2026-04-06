@@ -60,6 +60,7 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     name = "LockID"
     type = "S"
   }
+}
 
   tags = merge(
     {
