@@ -15,7 +15,7 @@ on:
 
 concurrency:
   group: cloudflare-iac-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   TF_ROOT: terraform/cloudflare
