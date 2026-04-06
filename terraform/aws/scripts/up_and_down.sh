@@ -54,7 +54,18 @@ run_step() {
 }
 
 tofu_init() {
-  tofu -chdir="${TF_DIR}" init -input=false
+  if [ -n "${TF_BACKEND_BUCKET:-}" ]; then
+    log "Initializing with S3 backend config..."
+    tofu -chdir="${TF_DIR}" init -input=false \
+      -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+      -backend-config="key=${TF_BACKEND_KEY:-aws/terraform.tfstate}" \
+      -backend-config="region=${AWS_REGION:-eu-central-1}" \
+      -backend-config="dynamodb_table=${TF_BACKEND_LOCK_TABLE}" \
+      -backend-config="encrypt=true"
+  else
+    log "Initializing with local/default backend..."
+    tofu -chdir="${TF_DIR}" init -input=false
+  fi
 }
 
 tofu_phase12_args() {

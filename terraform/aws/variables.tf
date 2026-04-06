@@ -248,12 +248,6 @@ variable "eks_endpoint_private_access" {
   default     = false
 }
 
-variable "eks_public_access_cidrs" {
-  description = "Allowed CIDR blocks for public EKS API endpoint access"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
 variable "eks_additional_tags" {
   description = "Additional tags to apply to EKS resources"
   type        = map(string)

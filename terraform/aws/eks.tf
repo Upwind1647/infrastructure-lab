@@ -82,7 +82,7 @@ resource "aws_eks_cluster" "main" {
     subnet_ids              = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     endpoint_public_access  = var.eks_endpoint_public_access
     endpoint_private_access = var.eks_endpoint_private_access
-    public_access_cidrs     = var.eks_public_access_cidrs
+    public_access_cidrs     = [var.home_ip]
   }
 
   access_config {

@@ -17,8 +17,7 @@ spec:
         - values-prod.yaml
         - values-cloud-override.yaml
   destination:
-    # Set this to terraform output `eks_cluster_endpoint` after cluster creation.
-    server: https://replace-with-eks-cluster-endpoint
+    server: aws-eks-prod
     namespace: production
   syncPolicy:
     automated:
