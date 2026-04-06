@@ -1,7 +1,7 @@
 # Overrides for Production AWS
 replicaCount: 3
 image:
-  tag: "bc58ca2"
+  tag: "af44811"
 ingress:
   host: "api.upwind.systems"
   tlsSecretName: "status-api-tls-prod"
