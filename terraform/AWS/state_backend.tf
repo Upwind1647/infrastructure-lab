@@ -15,6 +15,10 @@ resource "aws_s3_bucket" "tofu_state" {
     },
     var.tofu_state_extra_tags,
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_versioning" "tofu_state" {
