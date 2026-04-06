@@ -76,7 +76,7 @@ jobs:
       - name: OpenTofu Plan
         run: |
           tofu -chdir="${TF_ROOT}" plan -no-color -out=tfplan
-          tofu -chdir="${TF_ROOT}" show -no-color tfplan > plan.txt
+          tofu -chdir="${TF_ROOT}" show -no-color tfplan > "${TF_ROOT}/plan.txt"
 
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
