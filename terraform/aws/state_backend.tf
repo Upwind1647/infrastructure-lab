@@ -139,6 +139,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "s3:ListBucket",
           "s3:GetBucketLocation",
           "s3:ListBucketVersions",
+          "s3:GetBucketPolicy",
         ]
         Resource = [
           "arn:aws:s3:::${var.tofu_state_bucket_name}",
@@ -165,6 +166,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "dynamodb:UpdateItem",
           "dynamodb:DescribeContinuousBackups",
           "dynamodb:DescribeTimeToLive",
+          "dynamodb:ListTagsOfResource",
         ]
         Resource = [
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:table/${var.tofu_state_lock_table_name}",
