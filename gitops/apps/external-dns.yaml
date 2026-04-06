@@ -16,6 +16,8 @@ spec:
       values: |
         provider:
           name: cloudflare
+        cloudflare:
+          proxied: false
         env:
           - name: CF_API_TOKEN
             valueFrom:
@@ -30,8 +32,6 @@ spec:
         txtPrefix: "_edns."
         sources:
           - ingress
-        extraArgs:
-          - --cloudflare-proxied
         resources:
           requests:
             cpu: 25m
