@@ -23,10 +23,30 @@ resource "aws_subnet" "public_a" {
   availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
 
-  tags = {
-    Name = "public-subnet-a"
-    Tier = "Public"
-  }
+  tags = merge(
+    {
+      Name                     = "public-subnet-a"
+      Tier                     = "Public"
+      "kubernetes.io/role/elb" = "1"
+    },
+    var.enable_eks ? { "kubernetes.io/cluster/${var.eks_cluster_name}" = "shared" } : {},
+  )
+}
+
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.200.10.0/24" # 256 IPs
+  availability_zone       = "${var.aws_region}b"
+  map_public_ip_on_launch = true
+
+  tags = merge(
+    {
+      Name                     = "public-subnet-b"
+      Tier                     = "Public"
+      "kubernetes.io/role/elb" = "1"
+    },
+    var.enable_eks ? { "kubernetes.io/cluster/${var.eks_cluster_name}" = "shared" } : {},
+  )
 }
 
 resource "aws_route_table" "public_rt" {
@@ -42,6 +62,11 @@ resource "aws_route_table" "public_rt" {
 
 resource "aws_route_table_association" "public_a" {
   subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public_rt.id
 }
 

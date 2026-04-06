@@ -50,6 +50,9 @@ nav:
       - ADR-017 ArgoCD Self-Management and GitOps Maturity: phase10/adr-017-argocd-self-management-and-gitops-maturity.md
   - "Phase 11: Cloudflare IaC":
       - ADR-018 Cloudflare Infrastructure as Code: phase11/adr-018-cloudflare-iac.md
+  - "Phase 12: Hybrid GitOps and EKS FinOps":
+      - ADR-019 Hybrid GitOps and Multi-Cluster Architecture: phase12/adr-019-hybrid-gitops-multi-cluster-architecture.md
+      - ADR-020 EKS Provisioning and FinOps Strategy: phase12/adr-020-eks-provisioning-finops-strategy.md
 
 markdown_extensions:
   - admonition

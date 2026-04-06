@@ -61,6 +61,11 @@ Establish encrypted secret delivery with Bitnami Sealed Secrets, automate DNS ro
 Close the final manual Cloudflare gap by managing tunnel routing, Access applications, and Access policies as code with OpenTofu and GitHub Actions.
 - [ADR-018: Cloudflare Infrastructure as Code](phase11/adr-018-cloudflare-iac.md)
 
+### Phase 12: Hybrid GitOps and EKS FinOps
+Extend the platform into a Hub-and-Spoke multi-cluster model where on-prem ArgoCD manages both local K3s and AWS EKS with explicit FinOps controls.
+- [ADR-019: Hybrid GitOps and Multi-Cluster Architecture](phase12/adr-019-hybrid-gitops-multi-cluster-architecture.md)
+- [ADR-020: EKS Provisioning and FinOps Strategy](phase12/adr-020-eks-provisioning-finops-strategy.md)
+
 ---
 
 ## Tech Stack

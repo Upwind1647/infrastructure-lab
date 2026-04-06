@@ -124,3 +124,132 @@ variable "github_actions_sub_allowlist" {
     error_message = "github_actions_sub_allowlist must not be empty when enable_github_actions_oidc is true."
   }
 }
+
+# FinOps budget guardrails
+variable "enable_cost_budget" {
+  description = "Create an AWS budget and SNS alerts for spend guardrails"
+  type        = bool
+  default     = false
+}
+
+variable "budget_name" {
+  description = "AWS Budget name for monthly spend alerts"
+  type        = string
+  default     = "infrastructure-lab-monthly-cost"
+}
+
+variable "monthly_budget_limit_usd" {
+  description = "Monthly budget cap in USD (AWS Budgets supports USD for cost budgets)"
+  type        = number
+  default     = 55
+
+  validation {
+    condition     = var.monthly_budget_limit_usd > 0
+    error_message = "monthly_budget_limit_usd must be greater than zero."
+  }
+}
+
+variable "budget_alert_email" {
+  description = "Email endpoint for SNS budget alerts"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !var.enable_cost_budget || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", trimspace(var.budget_alert_email)))
+    error_message = "budget_alert_email must be a valid email when enable_cost_budget is true."
+  }
+}
+
+variable "budget_threshold_warning_percent" {
+  description = "Warning alert threshold percentage for AWS Budget notifications"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.budget_threshold_warning_percent > 0 && var.budget_threshold_warning_percent < 100
+    error_message = "budget_threshold_warning_percent must be between 1 and 99."
+  }
+}
+
+variable "budget_threshold_critical_percent" {
+  description = "Critical alert threshold percentage for AWS Budget notifications"
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.budget_threshold_critical_percent >= 100
+    error_message = "budget_threshold_critical_percent must be at least 100."
+  }
+}
+
+# EKS (Hybrid Hub-and-Spoke)
+variable "enable_eks" {
+  description = "Enable EKS control plane and managed node group provisioning"
+  type        = bool
+  default     = false
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+  default     = "infrastructure-lab-eks-prod"
+}
+
+variable "eks_kubeconfig_context_name" {
+  description = "Desired kubeconfig context alias for aws eks update-kubeconfig --alias"
+  type        = string
+  default     = "aws-eks-prod"
+}
+
+variable "eks_cluster_version" {
+  description = "Kubernetes version for EKS control plane"
+  type        = string
+  default     = "1.30"
+}
+
+variable "eks_node_instance_type" {
+  description = "EC2 instance type for EKS managed node group"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "eks_node_min_size" {
+  description = "Minimum EKS node group size"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_desired_size" {
+  description = "Desired EKS node group size"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum EKS node group size"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.eks_node_max_size >= var.eks_node_min_size
+    error_message = "eks_node_max_size must be greater than or equal to eks_node_min_size."
+  }
+}
+
+variable "eks_endpoint_public_access" {
+  description = "Expose the EKS API endpoint publicly"
+  type        = bool
+  default     = true
+}
+
+variable "eks_endpoint_private_access" {
+  description = "Expose the EKS API endpoint privately inside the VPC"
+  type        = bool
+  default     = false
+}
+
+variable "eks_additional_tags" {
+  description = "Additional tags to apply to EKS resources"
+  type        = map(string)
+  default     = {}
+}

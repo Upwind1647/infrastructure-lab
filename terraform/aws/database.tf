@@ -15,8 +15,8 @@ resource "aws_db_instance" "postgres" {
   db_subnet_group_name   = aws_db_subnet_group.data_group.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
-  publicly_accessible    = false
-  multi_az               = false
+  publicly_accessible = false
+  multi_az            = false
 
   # Backups
   backup_retention_period = 0 # Lab: no backups to minimize cost

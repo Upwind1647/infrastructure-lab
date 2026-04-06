@@ -1,0 +1,16 @@
+replicaCount: 3
+
+env:
+  appEnv: "production-cloud"
+
+ingress:
+  host: "aws.northlift.net"
+  tlsSecretName: "status-api-tls-prod"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"

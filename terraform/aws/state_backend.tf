@@ -15,10 +15,6 @@ resource "aws_s3_bucket" "tofu_state" {
     },
     var.tofu_state_extra_tags,
   )
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_s3_bucket_versioning" "tofu_state" {
@@ -74,10 +70,6 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     },
     var.tofu_state_extra_tags,
   )
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 data "aws_caller_identity" "current" {
@@ -144,9 +136,8 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:ListBucket",
-          "s3:GetBucketLocation",
-          "s3:ListBucketVersions",
+          "s3:List*",
+          "s3:Get*"
         ]
         Resource = [
           "arn:aws:s3:::${var.tofu_state_bucket_name}",
@@ -171,10 +162,36 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "dynamodb:PutItem",
           "dynamodb:DeleteItem",
           "dynamodb:UpdateItem",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:ListTagsOfResource",
         ]
         Resource = [
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:table/${var.tofu_state_lock_table_name}",
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "autoscaling:Describe*",
+          "budgets:ViewBudget",
+          "budgets:ListTagsForResource",
+          "ec2:Describe*",
+          "eks:Describe*",
+          "eks:List*",
+          "elasticloadbalancing:Describe*",
+          "iam:Get*",
+          "iam:List*",
+          "rds:Describe*",
+          "rds:ListTagsForResource",
+          "resourcegroupstaggingapi:GetResources",
+          "sns:GetTopicAttributes",
+          "sns:GetSubscriptionAttributes",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTagsForResource",
+          "sts:GetCallerIdentity",
+        ]
+        Resource = "*"
       },
     ]
   })

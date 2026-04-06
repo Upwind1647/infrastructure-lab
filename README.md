@@ -16,21 +16,26 @@ This repository serves as a project to showcase modern infrastructure provisioni
 graph LR
     Dev((Developer)) -->|git push| GH[GitHub Actions]
     GH -->|Build & Smoke Test| GHCR[GHCR Image]
-    GHCR -->|docker pull| EC2
-    GHCR -->|docker pull| K3S
+    GH -->|Plan-only IaC| TF[OpenTofu Plans]
 
-    subgraph AWS ["AWS VPC 10.200.0.0/20"]
-      EC2["EC2 (Public) · Watchdog + Containerized API"]
-        RDS[("RDS PostgreSQL (Data)")]
-        EC2 -->|Port 5432| RDS
+    subgraph OnPrem ["Proxmox VE (Hub)"]
+      Argo["ArgoCD Control Plane"]
+      K3S["K3s Cluster (in-cluster)"]
+      Argo --> K3S
     end
 
-    subgraph Proxmox ["Proxmox VE (Local)"]
-        K3S["K3s Node (Debian 13)"]
+    subgraph AWS ["AWS Spoke (eu-central-1)"]
+      EKS["EKS Cluster (aws-eks-prod)"]
+      RDS[("RDS PostgreSQL")]
+      EKS --> RDS
     end
 
-    User((User)) -->|HTTP| EC2
-    User -->|kubectl| K3S
+    GHCR --> K3S
+    GHCR --> EKS
+    Argo --> EKS
+
+    User((User)) -->|HTTPS| K3S
+    User -->|HTTPS| EKS
 ```
 
 ---
@@ -47,8 +52,10 @@ graph LR
 | 6 | **Persistence & Data Ops**| PV/PVC, Redis Backup & DR | Done |
 | 7 | **Ingress & DNS-01**| Traefik, cert-manager, DNS-01 Challenge | Done |
 | 8 | **Package Management** | Helm Chart, Templates | Done |
-| 9 | **GitOps** | ArgoCD App-of-Apps reconciliation | In Progress |
-| 10 | **GitOps Secrets** | Sealed Secrets, encrypted token delivery | In Progress |
+| 9 | **GitOps** | ArgoCD App-of-Apps reconciliation | Done |
+| 10 | **GitOps Secrets & Zero Trust** | Sealed Secrets, External-DNS, Cloudflare Tunnels | Done |
+| 11 | **Cloudflare IaC** | Tunnel DNS + Access policy lifecycle via OpenTofu | Done |
+| 12 | **Hybrid GitOps & EKS FinOps** | Hub-and-Spoke ArgoCD, EKS spoke, budget guardrails, plan-only CI | In Progress |
 
 ---
 
@@ -56,14 +63,14 @@ graph LR
 
 | Layer | Tools |
 |-------|-------|
-| **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS) |
-| **IaC & Automation** | Bash, GitOps, OpenTofu, Cloud-Init, uv, Helm |
+| **Infrastructure** | Proxmox VE, AWS (VPC, EC2, RDS, EKS) |
+| **IaC & Automation** | OpenTofu, Bash, GitOps, Helm, Cloud-Init, uv |
 | **CI/CD** | GitHub Actions, GHCR |
 | **Containerization** | Docker, systemd, Watchdog |
 | **Backend** | Python, FastAPI, Uvicorn |
-| **Networking & Edge** | AWS Security Groups, Kubernetes Ingress (Traefik) |
-| **Security & Testing** | UFW, pre-commit, Trivy, pytest |
-| **Orchestration** | Kubernetes (K3s), kubectl |
+| **Networking & Edge** | Traefik Ingress, Cloudflare DNS, Cloudflare Tunnel, external-dns |
+| **Security & Testing** | Sealed Secrets, UFW, pre-commit, Trivy, pytest |
+| **Orchestration** | Kubernetes (K3s + EKS), ArgoCD, kubectl |
 
 ---
 
@@ -161,6 +168,41 @@ kubectl get ingress -A
 # ArgoCD UI: https://argocd.northlift.net
 ```
 
+### Option D: AWS EKS Spoke (Phase 12)
+
+**1. Ensure aws module variables are configured**
+
+Set required values in `terraform/aws/terraform.tfvars` (ignored by git), including:
+- `ssh_public_key`
+- `home_ip`
+- `db_password`
+
+**2. Plan-only in CI**
+
+Open a PR with changes under `terraform/aws/` to trigger `.github/workflows/eks-plan.yml`.
+
+**3. Manual EKS apply (intentional)**
+```bash
+cd terraform/aws
+BUDGET_ALERT_EMAIL="you@example.com" ./scripts/up_and_down.sh up
+```
+
+**4. Register cluster to local ArgoCD**
+```bash
+aws eks update-kubeconfig \
+  --name infrastructure-lab-eks-prod \
+  --region eu-central-1 \
+  --alias aws-eks-prod
+
+argocd cluster add aws-eks-prod --name aws-eks-prod --grpc-web
+```
+
+**5. Cost-safe teardown**
+```bash
+cd terraform/aws
+BUDGET_ALERT_EMAIL="you@example.com" ./scripts/up_and_down.sh down
+```
+
 ---
 
 ## Repository Structure
@@ -172,8 +214,12 @@ kubectl get ingress -A
 ├── helm/                   # Helm Charts for Kubernetes deployments
 ├── scripts/                # Bash scripts for CI/CD & Server Hardening
 ├── terraform/              # IaC (OpenTofu)
-│   ├── AWS/                # VPC, EC2, RDS
+│   ├── aws/                # VPC, EC2, RDS, EKS, Budgets
+│   │   └── scripts/        # up_and_down.sh lifecycle controls
+│   ├── cloudflare/         # Tunnel routes + Access policy IaC
 │   └── proxmox/            # K3s Node (Proxmox local)
+├── gitops/                 # ArgoCD applications and cluster bootstrap state
+├── .github/workflows/      # CI/CD + IaC plan workflows
 ├── tests/                  # Unit tests (pytest)
 ├── app.py                  # FastAPI application entrypoint
 └── Dockerfile              # Multi-stage production build
@@ -199,3 +245,9 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-012](https://upwind1647.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
 * **[ADR-013](https://upwind1647.github.io/infrastructure-lab/phase9/adr-013-gitops-argocd/):** GitOps with ArgoCD
 * **[ADR-014](https://upwind1647.github.io/infrastructure-lab/phase10/adr-014-gitops-secrets-management-with-sealed-secrets/):** GitOps Secrets Management with Sealed Secrets
+* **[ADR-015](https://upwind1647.github.io/infrastructure-lab/phase10/adr-015-automated-dns-management-with-external-dns/):** Automated DNS Management with External-DNS
+* **[ADR-016](https://upwind1647.github.io/infrastructure-lab/phase10/adr-016-zero-trust-access-with-cloudflare-tunnels/):** Zero Trust Access with Cloudflare Tunnels
+* **[ADR-017](https://upwind1647.github.io/infrastructure-lab/phase10/adr-017-argocd-self-management-and-gitops-maturity/):** ArgoCD Self-Management and GitOps Maturity
+* **[ADR-018](https://upwind1647.github.io/infrastructure-lab/phase11/adr-018-cloudflare-iac/):** Cloudflare Infrastructure as Code
+* **[ADR-019](https://upwind1647.github.io/infrastructure-lab/phase12/adr-019-hybrid-gitops-multi-cluster-architecture/):** Hybrid GitOps and Multi-Cluster Architecture
+* **[ADR-020](https://upwind1647.github.io/infrastructure-lab/phase12/adr-020-eks-provisioning-finops-strategy/):** EKS Provisioning and FinOps Strategy
