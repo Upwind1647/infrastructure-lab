@@ -47,6 +47,7 @@ nav:
       - ADR-014 GitOps Secrets Management with Sealed Secrets: phase10/adr-014-gitops-secrets-management-with-sealed-secrets.md
       - ADR-015 Automated DNS Management with External-DNS: phase10/adr-015-automated-dns-management-with-external-dns.md
       - ADR-016 Zero Trust Access with Cloudflare Tunnels: phase10/adr-016-zero-trust-access-with-cloudflare-tunnels.md
+      - ADR-017 ArgoCD Self-Management and GitOps Maturity: phase10/adr-017-argocd-self-management-and-gitops-maturity.md
 
 markdown_extensions:
   - admonition
