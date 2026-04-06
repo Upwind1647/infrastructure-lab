@@ -57,6 +57,10 @@ Establish encrypted secret delivery with Bitnami Sealed Secrets, automate DNS ro
 - [ADR-015: Automated DNS Management with External-DNS](phase10/adr-015-automated-dns-management-with-external-dns.md)
 - [ADR-016: Zero Trust Access with Cloudflare Tunnels](phase10/adr-016-zero-trust-access-with-cloudflare-tunnels.md)
 
+### Phase 11: Cloudflare IaC
+Close the final manual Cloudflare gap by managing tunnel routing, Access applications, and Access policies as code with OpenTofu and GitHub Actions.
+- [ADR-018: Cloudflare Infrastructure as Code](phase11/adr-018-cloudflare-iac.md)
+
 ---
 
 ## Tech Stack
