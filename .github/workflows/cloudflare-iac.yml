@@ -1,0 +1,184 @@
+name: Cloudflare IaC
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - terraform/cloudflare/**
+      - .github/workflows/cloudflare-iac.yml
+  push:
+    branches: [main]
+    paths:
+      - terraform/cloudflare/**
+      - .github/workflows/cloudflare-iac.yml
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-iac-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_ROOT: terraform/cloudflare
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_tunnel_secret: ${{ secrets.CF_TUNNEL_SECRET }}
+      TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_github_idp_id: ${{ vars.CLOUDFLARE_GITHUB_IDP_ID }}
+      TF_VAR_access_allowed_emails: ${{ vars.CLOUDFLARE_ACCESS_ALLOWED_EMAILS_JSON }}
+      TF_BACKEND_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+      TF_BACKEND_LOCK_TABLE: ${{ vars.TOFU_STATE_LOCK_TABLE }}
+      TF_BACKEND_REGION: ${{ vars.TOFU_STATE_REGION }}
+      TF_BACKEND_KEY: cloudflare/terraform.tfstate
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.TF_BACKEND_REGION }}
+
+      - name: OpenTofu Init
+        run: |
+          tofu -chdir="${TF_ROOT}" init \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="region=${TF_BACKEND_REGION}" \
+            -backend-config="dynamodb_table=${TF_BACKEND_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: OpenTofu Fmt
+        run: tofu -chdir="${TF_ROOT}" fmt -check
+
+      - name: OpenTofu Validate
+        run: tofu -chdir="${TF_ROOT}" validate
+
+      - name: OpenTofu Plan
+        run: |
+          tofu -chdir="${TF_ROOT}" plan -no-color -out=tfplan
+          tofu -chdir="${TF_ROOT}" show -no-color tfplan > "${TF_ROOT}/plan.txt"
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-plan
+          path: terraform/cloudflare/plan.txt
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- cloudflare-iac-plan -->';
+            const planPath = `${process.env.TF_ROOT}/plan.txt`;
+            const fullPlan = fs.readFileSync(planPath, 'utf8');
+            const clippedPlan = fullPlan.length > 60000 ? `${fullPlan.slice(0, 60000)}\n\n...truncated...` : fullPlan;
+            const body = [
+              marker,
+              '### Cloudflare IaC OpenTofu Plan',
+              '',
+              '<details><summary>Show Plan</summary>',
+              '',
+              '```',
+              clippedPlan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.data.find((comment) =>
+              comment.body && comment.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  apply:
+    name: Apply
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_tunnel_secret: ${{ secrets.CF_TUNNEL_SECRET }}
+      TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_github_idp_id: ${{ vars.CLOUDFLARE_GITHUB_IDP_ID }}
+      TF_VAR_access_allowed_emails: ${{ vars.CLOUDFLARE_ACCESS_ALLOWED_EMAILS_JSON }}
+      TF_BACKEND_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+      TF_BACKEND_LOCK_TABLE: ${{ vars.TOFU_STATE_LOCK_TABLE }}
+      TF_BACKEND_REGION: ${{ vars.TOFU_STATE_REGION }}
+      TF_BACKEND_KEY: cloudflare/terraform.tfstate
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.TF_BACKEND_REGION }}
+
+      - name: OpenTofu Init
+        run: |
+          tofu -chdir="${TF_ROOT}" init \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=${TF_BACKEND_KEY}" \
+            -backend-config="region=${TF_BACKEND_REGION}" \
+            -backend-config="dynamodb_table=${TF_BACKEND_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: OpenTofu Plan
+        run: tofu -chdir="${TF_ROOT}" plan -no-color -out=tfplan
+
+      - name: OpenTofu Apply
+        run: tofu -chdir="${TF_ROOT}" apply -auto-approve tfplan
