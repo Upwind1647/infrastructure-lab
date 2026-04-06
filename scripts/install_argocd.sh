@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# NOTE: This script is for initial bootstrap ONLY.
+# Day-2 ArgoCD configuration is managed via GitOps: gitops/apps/argocd.yaml
+# Do NOT run helm upgrade manually; push changes to gitops/argocd-values.yaml instead.
+
 NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 RELEASE_NAME="${ARGOCD_RELEASE_NAME:-argocd}"
-VALUES_FILE="${ARGOCD_VALUES_FILE:-deploy/k8s/argocd-values.yaml}"
+VALUES_FILE="${ARGOCD_VALUES_FILE:-gitops/argocd-values.yaml}"
 HELM_REPO_NAME="argo"
 HELM_REPO_URL="https://argoproj.github.io/argo-helm"
 ROLLOUT_TIMEOUT="${ARGOCD_ROLLOUT_TIMEOUT:-300s}"
