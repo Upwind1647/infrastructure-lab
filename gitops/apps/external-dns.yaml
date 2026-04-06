@@ -31,7 +31,7 @@ spec:
         sources:
           - ingress
         extraArgs:
-          - --cloudflare-proxied=true
+          - --cloudflare-proxied
         resources:
           requests:
             cpu: 25m
