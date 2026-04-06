@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: status-api-cloud
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Upwind1647/infrastructure-lab.git
+    targetRevision: main
+    path: helm/status-api
+    helm:
+      releaseName: status-api-cloud
+      valueFiles:
+        - values-prod.yaml
+        - values-cloud-override.yaml
+  destination:
+    # Set this to terraform output `eks_cluster_endpoint` after cluster creation.
+    server: https://replace-with-eks-cluster-endpoint
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
