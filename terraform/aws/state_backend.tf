@@ -15,6 +15,7 @@ resource "aws_s3_bucket" "tofu_state" {
     },
     var.tofu_state_extra_tags,
   )
+}
 
 resource "aws_s3_bucket_versioning" "tofu_state" {
   count = var.enable_tofu_state_backend ? 1 : 0
