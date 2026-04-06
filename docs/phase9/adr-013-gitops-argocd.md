@@ -22,7 +22,7 @@ We evaluated three approaches:
 We adopt ArgoCD as the GitOps controller for this platform.
 
 - ArgoCD is installed in the local K3s cluster via Helm with explicit resource requests and limits.
-- ArgoCD UI is published through Traefik Ingress at `argocd.lab.northlift.net` with cert-manager TLS.
+- ArgoCD UI is published through Traefik Ingress at `argocd.northlift.net` with cert-manager TLS.
 - A root Application (`gitops/apps/root.yaml`) manages child Applications:
   - `cert-manager` (cert-manager controller release)
   - `cluster-issuers` (ClusterIssuers configuration)

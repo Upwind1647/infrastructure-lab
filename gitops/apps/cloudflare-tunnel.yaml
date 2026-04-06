@@ -22,7 +22,7 @@ spec:
           secretName: cloudflare-tunnel-credentials
           # The chart appends a terminal fallback rule: - service: http_status:404.
           ingress:
-            - hostname: argocd.lab.northlift.net
+            - hostname: argocd.northlift.net
               service: http://argocd-server.argocd.svc.cluster.local:80
         resources:
           requests:

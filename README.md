@@ -158,7 +158,7 @@ kubectl -n external-dns get secret cloudflare-api-token-secret
 **6. Verify ArgoCD UI and workload ingress**
 ```bash
 kubectl get ingress -A
-# ArgoCD UI: https://argocd.lab.northlift.net
+# ArgoCD UI: https://argocd.northlift.net
 ```
 
 ---

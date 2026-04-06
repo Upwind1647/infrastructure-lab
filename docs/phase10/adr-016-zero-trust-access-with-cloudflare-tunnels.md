@@ -7,7 +7,7 @@ Internal platform services like ArgoCD should not be exposed through inbound hom
 Our current state has two distinct service classes:
 
 1. Public product surfaces (for example `lab.northlift.net`) that are intentionally internet-accessible.
-2. Internal operator surfaces (for example `argocd.lab.northlift.net`) that should require stronger access controls and should not depend on inbound router exposure.
+2. Internal operator surfaces (for example `argocd.northlift.net`) that should require stronger access controls and should not depend on inbound router exposure.
 
 With Cloudflare DNS automation already established, we need a complementary zero-trust connectivity model that:
 
@@ -30,7 +30,7 @@ Implementation details:
 - Deploy tunnel connector via ArgoCD Application `cloudflare-tunnel` using the official Cloudflare Helm chart.
 - Run `replicaCount: 2` for high availability.
 - Configure ingress routing in chart values:
-  - `argocd.lab.northlift.net -> http://argocd-server.argocd.svc.cluster.local:80`
+  - `argocd.northlift.net -> http://argocd-server.argocd.svc.cluster.local:80`
   - fallback behavior remains `http_status:404` via chart-generated ConfigMap rule.
 - Store tunnel credentials as a SealedSecret in `gitops/secrets` and reference it with `cloudflare.secretName`.
 - Disable direct ArgoCD ingress in the ArgoCD Helm values to enforce tunnel-only exposure.
@@ -40,7 +40,7 @@ Implementation details:
 | Class | Exposure Model | Examples | Control Boundary |
 | --- | --- | --- | --- |
 | Public | Public DNS + Kubernetes Ingress | `lab.northlift.net` (status-api) | TLS + application auth |
-| Tunnel-only | Cloudflare Tunnel hostname + Access policy | `argocd.lab.northlift.net` | Cloudflare Access (GitHub OAuth) + internal service |
+| Tunnel-only | Cloudflare Tunnel hostname + Access policy | `argocd.northlift.net` | Cloudflare Access (GitHub OAuth) + internal service |
 | Internal-only | No public DNS and no external route | Redis, cert-manager, sealed-secrets | Cluster network + Kubernetes RBAC |
 
 ## Operational Workflow
@@ -48,8 +48,8 @@ Implementation details:
 ### Cloudflare setup (Dashboard or CLI)
 
 1. Create tunnel `lab-internal-services`.
-2. Add hostname route for `argocd.lab.northlift.net` to `http://argocd-server.argocd.svc.cluster.local:80`.
-3. Configure Cloudflare Access application for `argocd.lab.northlift.net`.
+2. Add hostname route for `argocd.northlift.net` to `http://argocd-server.argocd.svc.cluster.local:80`.
+3. Configure Cloudflare Access application for `argocd.northlift.net`.
 4. Add an allow policy constrained to approved GitHub identities.
 
 CLI reference flow:
@@ -57,7 +57,7 @@ CLI reference flow:
 ```bash
 cloudflared tunnel login
 cloudflared tunnel create lab-internal-services
-cloudflared tunnel route dns lab-internal-services argocd.lab.northlift.net
+cloudflared tunnel route dns lab-internal-services argocd.northlift.net
 ```
 
 Then configure the Access application and GitHub OAuth policy in Cloudflare Zero Trust (Dashboard), or via API/Terraform if your account automation is already in place.
