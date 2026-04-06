@@ -9,7 +9,8 @@ spec:
     repoURL: https://github.com/Upwind1647/infrastructure-lab.git
     targetRevision: main
     path: gitops/apps
-    # Child Applications in this folder (including sealed-secrets and platform-secrets)
+    # Child Applications in this folder (including sealed-secrets, platform-secrets,
+    # and cloudflare-tunnel)
     # are auto-discovered by the App of Apps root.
     directory:
       recurse: false

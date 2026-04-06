@@ -50,7 +50,7 @@ redis:
 
 server:
   ingress:
-    enabled: true
+    enabled: false
     ingressClassName: traefik
     hostname: argocd.lab.northlift.net
     path: /

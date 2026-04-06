@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflare-tunnel
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://cloudflare.github.io/helm-charts
+    chart: cloudflare-tunnel
+    targetRevision: 0.3.2
+    helm:
+      releaseName: cloudflare-tunnel
+      values: |
+        replicaCount: 2
+        cloudflare:
+          # Must match the tunnel created in Cloudflare Zero Trust.
+          tunnelName: lab-internal-services
+          # This Secret is provided via SealedSecret in gitops/secrets.
+          secretName: cloudflare-tunnel-credentials
+          # The chart appends a terminal fallback rule: - service: http_status:404.
+          ingress:
+            - hostname: argocd.lab.northlift.net
+              service: http://argocd-server.argocd.svc.cluster.local:80
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 150m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudflare-tunnel
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
