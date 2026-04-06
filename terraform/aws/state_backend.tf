@@ -164,6 +164,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "dynamodb:DeleteItem",
           "dynamodb:UpdateItem",
           "dynamodb:DescribeContinuousBackups",
+          "dynamodb:DescribeTimeToLive",
         ]
         Resource = [
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:table/${var.tofu_state_lock_table_name}",
@@ -174,6 +175,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
         Action = [
           "autoscaling:Describe*",
           "budgets:ViewBudget",
+          "budgets:ListTagsForResource",
           "ec2:Describe*",
           "eks:Describe*",
           "eks:List*",
@@ -184,6 +186,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "rds:ListTagsForResource",
           "resourcegroupstaggingapi:GetResources",
           "sns:GetTopicAttributes",
+          "sns:GetSubscriptionAttributes",
           "sns:ListSubscriptionsByTopic",
           "sns:ListTagsForResource",
           "sts:GetCallerIdentity",
