@@ -51,14 +51,6 @@ redis:
 server:
   ingress:
     enabled: false
-    ingressClassName: traefik
-    hostname: argocd.northlift.net
-    path: /
-    pathType: Prefix
-    tls: true
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-production
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
   resources:
     requests:
       cpu: 100m
