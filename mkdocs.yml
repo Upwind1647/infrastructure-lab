@@ -45,6 +45,7 @@ nav:
       - ADR-013 GitOps with ArgoCD: phase9/adr-013-gitops-argocd.md
   - "Phase 10: GitOps Secrets":
       - ADR-014 GitOps Secrets Management with Sealed Secrets: phase10/adr-014-gitops-secrets-management-with-sealed-secrets.md
+      - ADR-015 Automated DNS Management with External-DNS: phase10/adr-015-automated-dns-management-with-external-dns.md
 
 markdown_extensions:
   - admonition

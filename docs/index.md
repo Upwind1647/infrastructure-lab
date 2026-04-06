@@ -52,8 +52,9 @@ Establish ArgoCD as the pull-based control plane and migrate Helm releases to de
 - [ADR-013: GitOps with ArgoCD](phase9/adr-013-gitops-argocd.md)
 
 ### Phase 10: GitOps Secrets
-Establish encrypted secret delivery with Bitnami Sealed Secrets to enable zero-touch bootstrap from Git.
+Establish encrypted secret delivery with Bitnami Sealed Secrets and automate DNS routing with external-dns for zero-touch public endpoint management.
 - [ADR-014: GitOps Secrets Management with Sealed Secrets](phase10/adr-014-gitops-secrets-management-with-sealed-secrets.md)
+- [ADR-015: Automated DNS Management with External-DNS](phase10/adr-015-automated-dns-management-with-external-dns.md)
 
 ---
 
