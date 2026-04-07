@@ -5,15 +5,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 
+if [ -f "${TF_DIR}/.env" ]; then
+  source "${TF_DIR}/.env"
+fi
+
 EKS_CONTEXT="${EKS_CONTEXT:-aws-eks-prod}"
 ARGOCD_CLUSTER_NAME="${ARGOCD_CLUSTER_NAME:-aws-eks-prod}"
 EKS_CLUSTER_NAME="${EKS_CLUSTER_NAME:-infrastructure-lab-eks-prod}"
+SOURCE_K3S_CONTEXT="${SOURCE_K3S_CONTEXT:-}"
 WORKLOAD_NAMESPACE="${WORKLOAD_NAMESPACE:-production}"
 AWS_REGION="${AWS_REGION:-eu-central-1}"
 ALLOW_NON_EPHEMERAL_PV_DESTROY="${ALLOW_NON_EPHEMERAL_PV_DESTROY:-false}"
 BUDGET_ALERT_EMAIL="${BUDGET_ALERT_EMAIL:-}"
 
 FAILED_STEP=""
+BOOTSTRAP_CONTEXT=""
 
 log() {
   printf '[INFO] %s\n' "$*"
@@ -85,6 +91,124 @@ tofu_phase12_args() {
     "-var=eks_node_max_size=3" \
     "-var=eks_endpoint_private_access=true" \
     "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}"
+}
+
+ensure_kubeconfig_context() {
+  log "Updating kubeconfig context ${EKS_CONTEXT} for cluster ${EKS_CLUSTER_NAME}..."
+  aws eks update-kubeconfig \
+    --name "${EKS_CLUSTER_NAME}" \
+    --region "${AWS_REGION}" \
+    --alias "${EKS_CONTEXT}" >/dev/null
+
+  kubectl config get-contexts "${EKS_CONTEXT}" >/dev/null 2>&1 || \
+    die "Kubeconfig context ${EKS_CONTEXT} was not created successfully."
+}
+
+ensure_argocd_cluster_registration() {
+  require_cmd argocd
+
+  kubectl config get-contexts "${EKS_CONTEXT}" >/dev/null 2>&1 || \
+    die "Kubeconfig context ${EKS_CONTEXT} is missing. Run kubeconfig setup first."
+
+  if argocd cluster get "${ARGOCD_CLUSTER_NAME}" --grpc-web >/dev/null 2>&1; then
+    log "ArgoCD cluster ${ARGOCD_CLUSTER_NAME} already registered."
+    return 0
+  fi
+
+  log "Registering ${EKS_CONTEXT} in ArgoCD as ${ARGOCD_CLUSTER_NAME}..."
+  argocd cluster add "${EKS_CONTEXT}" \
+    --name "${ARGOCD_CLUSTER_NAME}" \
+    --yes \
+    --upsert \
+    --grpc-web >/dev/null
+}
+
+resolve_source_k3s_context() {
+  if [ -n "${SOURCE_K3S_CONTEXT}" ]; then
+    printf '%s\n' "${SOURCE_K3S_CONTEXT}"
+    return 0
+  fi
+
+  if [ -n "${BOOTSTRAP_CONTEXT}" ] && [ "${BOOTSTRAP_CONTEXT}" != "${EKS_CONTEXT}" ]; then
+    printf '%s\n' "${BOOTSTRAP_CONTEXT}"
+    return 0
+  fi
+
+  local current_context
+  current_context="$(kubectl config current-context 2>/dev/null || true)"
+
+  [ -n "${current_context}" ] || \
+    die "Unable to detect source K3s context. Set SOURCE_K3S_CONTEXT explicitly."
+
+  [ "${current_context}" != "${EKS_CONTEXT}" ] || \
+    die "SOURCE_K3S_CONTEXT resolved to ${EKS_CONTEXT}. Set SOURCE_K3S_CONTEXT to your local K3s context."
+
+  printf '%s\n' "${current_context}"
+}
+
+discover_source_key_secret() {
+  local source_context="$1"
+  local -a secret_names=()
+
+  mapfile -t secret_names < <(
+    kubectl --context="${source_context}" -n kube-system get secret \
+      -l sealedsecrets.bitnami.com/sealed-secrets-key=active \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | sed '/^$/d'
+  )
+
+  if [ "${#secret_names[@]}" -eq 0 ]; then
+    mapfile -t secret_names < <(
+      kubectl --context="${source_context}" -n kube-system get secret \
+        -l sealedsecrets.bitnami.com/sealed-secrets-key \
+        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | sed '/^$/d'
+    )
+  fi
+
+  case "${#secret_names[@]}" in
+    0)
+      die "No Sealed Secrets key found in source context ${source_context}."
+      ;;
+    1)
+      printf '%s\n' "${secret_names[0]}"
+      ;;
+    *)
+      die "Expected exactly one Sealed Secrets key in ${source_context}, found ${#secret_names[@]}: ${secret_names[*]}"
+      ;;
+  esac
+}
+
+migrate_sealed_secrets_key() {
+  local source_context source_secret key_file source_tls_crt target_tls_crt applied_tls_crt
+  source_context="$(resolve_source_k3s_context)"
+
+  kubectl config get-contexts "${source_context}" >/dev/null 2>&1 || \
+    die "Source context ${source_context} not found in kubeconfig."
+  kubectl config get-contexts "${EKS_CONTEXT}" >/dev/null 2>&1 || \
+    die "Target context ${EKS_CONTEXT} not found in kubeconfig."
+
+  source_secret="$(discover_source_key_secret "${source_context}")"
+  key_file="${TMP_DIR}/sealed-secrets-master-key.yaml"
+
+  source_tls_crt="$(kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}')"
+  [ -n "${source_tls_crt}" ] || \
+    die "Source secret ${source_secret} in ${source_context} is missing tls.crt data."
+
+  target_tls_crt="$(kubectl --context="${EKS_CONTEXT}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || true)"
+
+  if [ -n "${target_tls_crt}" ] && [ "${target_tls_crt}" = "${source_tls_crt}" ]; then
+    log "Sealed Secrets key ${source_secret} is already present on ${EKS_CONTEXT}; skipping transfer."
+    return 0
+  fi
+
+  kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o yaml >"${key_file}"
+  kubectl --context="${EKS_CONTEXT}" -n kube-system apply -f "${key_file}" >/dev/null
+
+  applied_tls_crt="$(kubectl --context="${EKS_CONTEXT}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || true)"
+
+  [ "${applied_tls_crt}" = "${source_tls_crt}" ] || \
+    die "Sealed Secrets key transfer verification failed for ${source_secret}."
+
+  log "Sealed Secrets key ${source_secret} migrated from ${source_context} to ${EKS_CONTEXT}."
 }
 
 argocd_deregister_cluster() {
@@ -195,6 +319,9 @@ command_up() {
 
   run_step "tofu init" tofu_init
   run_step "tofu apply" tofu -chdir="${TF_DIR}" apply -auto-approve "${tf_args[@]}"
+  run_step "update kubeconfig context" ensure_kubeconfig_context
+  run_step "ArgoCD cluster registration" ensure_argocd_cluster_registration
+  run_step "migrate Sealed Secrets key" migrate_sealed_secrets_key
 }
 
 command_down() {
@@ -217,6 +344,7 @@ Environment overrides:
   EKS_CONTEXT=aws-eks-prod
   ARGOCD_CLUSTER_NAME=aws-eks-prod
   EKS_CLUSTER_NAME=infrastructure-lab-eks-prod
+  SOURCE_K3S_CONTEXT=<local-k3s-context>
   WORKLOAD_NAMESPACE=production
   AWS_REGION=eu-central-1
   ALLOW_NON_EPHEMERAL_PV_DESTROY=false
@@ -230,6 +358,8 @@ main() {
   require_cmd tofu
   require_cmd kubectl
   require_cmd aws
+
+  BOOTSTRAP_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
 
   case "$1" in
     up)
