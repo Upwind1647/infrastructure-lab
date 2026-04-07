@@ -201,8 +201,7 @@ migrate_sealed_secrets_key() {
   fi
 
   kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o json \
-    | jq 'del(.metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp,
-               .metadata.generation, .metadata.managedFields, .status)' \
+    | jq 'del(.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.generation,.metadata.managedFields,.status)' \
     >"${key_file}"
   kubectl --context="${EKS_CONTEXT}" -n kube-system apply -f "${key_file}" >/dev/null
 
