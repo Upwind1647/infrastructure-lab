@@ -204,7 +204,7 @@ variable "eks_kubeconfig_context_name" {
 variable "eks_cluster_version" {
   description = "Kubernetes version for EKS control plane"
   type        = string
-  default     = "1.30"
+  default     = "1.34"
 }
 
 variable "eks_node_instance_type" {
