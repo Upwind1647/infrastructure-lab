@@ -2,9 +2,13 @@ replicaCount: 3
 
 env:
   appEnv: "production-cloud"
+  # Deliberately disabled in the EKS spoke: /hits should degrade when Redis is absent.
+  redisHost: ""
 
 ingress:
+  className: "nginx"
   host: "aws.northlift.net"
+  clusterIssuer: "letsencrypt-production"
   tlsSecretName: "status-api-tls-prod"
 
 resources:
