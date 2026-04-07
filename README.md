@@ -1,6 +1,7 @@
 # Infrastructure Lab
 
 [![Build & Smoke Test](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml)
+[![Cloudflare IaC](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/cloudflare-iac.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/cloudflare-iac.yml)
 [![Docs](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/publish_docs.yml/badge.svg)](https://upwind1647.github.io/infrastructure-lab/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Upwind1647/infrastructure-lab/blob/main/LICENSE)
 
