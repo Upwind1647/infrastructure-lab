@@ -65,6 +65,7 @@ Close the final manual Cloudflare gap by managing tunnel routing, Access applica
 Extend the platform into a Hub-and-Spoke multi-cluster model where on-prem ArgoCD manages both local K3s and AWS EKS with explicit FinOps controls.
 - [ADR-019: Hybrid GitOps and Multi-Cluster Architecture](phase12/adr-019-hybrid-gitops-multi-cluster-architecture.md)
 - [ADR-020: EKS Provisioning and FinOps Strategy](phase12/adr-020-eks-provisioning-finops-strategy.md)
+- [ADR-021: Ingress Controller Strategy per Environment](phase12/adr-021-ingress-controller-strategy-per-environment.md)
 
 ---
 
