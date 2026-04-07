@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-secrets-aws
+  name: cluster-issuers-aws
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Upwind1647/infrastructure-lab.git
     targetRevision: main
-    path: gitops/secrets
+    path: gitops/issuers
   destination:
     name: aws-eks-prod
     namespace: cert-manager
@@ -27,4 +27,3 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-      - ApplyOutOfSyncOnly=true
