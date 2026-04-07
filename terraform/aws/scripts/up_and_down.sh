@@ -200,7 +200,10 @@ migrate_sealed_secrets_key() {
     return 0
   fi
 
-  kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o yaml >"${key_file}"
+  kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o json \
+    | jq 'del(.metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp,
+               .metadata.generation, .metadata.managedFields, .status)' \
+    >"${key_file}"
   kubectl --context="${EKS_CONTEXT}" -n kube-system apply -f "${key_file}" >/dev/null
 
   applied_tls_crt="$(kubectl --context="${EKS_CONTEXT}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || true)"
@@ -358,6 +361,7 @@ main() {
   require_cmd tofu
   require_cmd kubectl
   require_cmd aws
+  require_cmd jq
 
   BOOTSTRAP_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
 
