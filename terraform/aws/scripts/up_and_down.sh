@@ -204,7 +204,6 @@ command_down() {
   run_step "tofu init" tofu_init
   run_step "ArgoCD deregistration" argocd_deregister_cluster
   run_step "PV pre-destroy checks" check_non_ephemeral_pvs
-  run_step "cordon and drain" cordon_and_drain_nodes
   run_step "delete PVCs and LoadBalancers" delete_ephemeral_workloads
   run_step "wait for ELB cleanup" wait_for_elb_cleanup
   run_step "tofu destroy" tofu -chdir="${TF_DIR}" destroy -auto-approve "${tf_args[@]}"
