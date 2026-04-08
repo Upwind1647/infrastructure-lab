@@ -79,6 +79,11 @@ tofu_phase12_args() {
   [ -n "${TF_BACKEND_BUCKET}" ] || die "TF_BACKEND_BUCKET must be set."
   [ -n "${TF_BACKEND_LOCK_TABLE}" ] || die "TF_BACKEND_LOCK_TABLE must be set."
 
+  local current_ip
+  current_ip="$(curl -s4 ifconfig.me 2>/dev/null || curl -s4 api.ipify.org 2>/dev/null || true)"
+  [ -n "${current_ip}" ] || die "Failed to determine your public IP address. Check your internet connection."
+  log "Detected current public IP: ${current_ip} - Securing EKS API..." >&2
+
   printf '%s\n' \
     "-var=enable_cost_budget=true" \
     "-var=enable_eks=true" \
@@ -86,15 +91,77 @@ tofu_phase12_args() {
     "-var=enable_github_actions_oidc=true" \
     "-var=tofu_state_bucket_name=${TF_BACKEND_BUCKET}" \
     "-var=tofu_state_lock_table_name=${TF_BACKEND_LOCK_TABLE}" \
-    "-var=eks_node_instance_type=t3.micro" \
+    "-var=eks_node_instance_type=t3.medium" \
     "-var=eks_node_desired_size=2" \
     "-var=eks_node_max_size=3" \
+    "-var=eks_endpoint_public_access=true" \
     "-var=eks_endpoint_private_access=true" \
+    "-var=home_ip=${current_ip}/32" \
     "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}"
 }
 
-ensure_kubeconfig_context() {
-  log "Updating kubeconfig context ${EKS_CONTEXT} for cluster ${EKS_CLUSTER_NAME}..."
+current_aws_caller_arn() {
+  local caller_arn
+  caller_arn="$(aws sts get-caller-identity --query Arn --output text 2>/dev/null || true)"
+
+  [ -n "${caller_arn}" ] || return 1
+  [ "${caller_arn}" != "None" ] || return 1
+  [ "${caller_arn}" != "null" ] || return 1
+
+  printf '%s\n' "${caller_arn}"
+}
+
+use_terraform_eks_admin_credentials() {
+  log "Switching to Terraform EKS admin credentials..."
+  export ORIG_AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
+  export ORIG_AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
+  export ORIG_AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN:-}"
+
+  local access_key secret_key
+  access_key="$(tofu -chdir="${TF_DIR}" output -raw eks_admin_access_key 2>/dev/null || true)"
+  secret_key="$(tofu -chdir="${TF_DIR}" output -raw eks_admin_secret_key 2>/dev/null || true)"
+
+  [ -n "${access_key}" ] || return 1
+  [ -n "${secret_key}" ] || return 1
+  [ "${access_key}" != "None" ] || return 1
+  [ "${secret_key}" != "None" ] || return 1
+  [ "${access_key}" != "null" ] || return 1
+  [ "${secret_key}" != "null" ] || return 1
+
+  export AWS_ACCESS_KEY_ID="${access_key}"
+  export AWS_SECRET_ACCESS_KEY="${secret_key}"
+  unset AWS_SESSION_TOKEN
+}
+
+restore_original_credentials() {
+  log "Restoring original AWS credentials..."
+  if [ -n "${ORIG_AWS_ACCESS_KEY_ID:-}" ]; then
+    export AWS_ACCESS_KEY_ID="${ORIG_AWS_ACCESS_KEY_ID}"
+    export AWS_SECRET_ACCESS_KEY="${ORIG_AWS_SECRET_ACCESS_KEY}"
+    export AWS_SESSION_TOKEN="${ORIG_AWS_SESSION_TOKEN:-}"
+  else
+    unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+  fi
+}
+
+wait_for_eks_kubectl_auth() {
+  local retries="${1:-24}"
+  local sleep_seconds="${2:-5}"
+  local attempt=1
+
+  while [ "${attempt}" -le "${retries}" ]; do
+    if kubectl --context "${EKS_CONTEXT}" get namespace kube-system >/dev/null 2>&1; then
+      return 0
+    fi
+
+    sleep "${sleep_seconds}"
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
+
+update_eks_kubeconfig_alias() {
   aws eks update-kubeconfig \
     --name "${EKS_CLUSTER_NAME}" \
     --region "${AWS_REGION}" \
@@ -104,23 +171,39 @@ ensure_kubeconfig_context() {
     die "Kubeconfig context ${EKS_CONTEXT} was not created successfully."
 }
 
-ensure_argocd_cluster_registration() {
-  require_cmd argocd
+ensure_kubeconfig_context() {
+  local caller_arn
 
-  kubectl config get-contexts "${EKS_CONTEXT}" >/dev/null 2>&1 || \
-    die "Kubeconfig context ${EKS_CONTEXT} is missing. Run kubeconfig setup first."
+  log "Updating kubeconfig context ${EKS_CONTEXT} for cluster ${EKS_CLUSTER_NAME}..."
+  caller_arn="$(current_aws_caller_arn || true)"
+  if [ -n "${caller_arn}" ]; then
+    log "Current AWS caller ARN: ${caller_arn}"
+  else
+    warn "Unable to determine current AWS caller ARN."
+  fi
 
-  if argocd cluster get "${ARGOCD_CLUSTER_NAME}" --grpc-web >/dev/null 2>&1; then
-    log "ArgoCD cluster ${ARGOCD_CLUSTER_NAME} already registered."
+  update_eks_kubeconfig_alias
+
+  if wait_for_eks_kubectl_auth 6 5; then
     return 0
   fi
 
-  log "Registering ${EKS_CONTEXT} in ArgoCD as ${ARGOCD_CLUSTER_NAME}..."
-  argocd cluster add "${EKS_CONTEXT}" \
-    --name "${ARGOCD_CLUSTER_NAME}" \
-    --yes \
-    --upsert \
-    --grpc-web >/dev/null
+  warn "Kubernetes auth for ${EKS_CONTEXT} failed with current AWS identity. Falling back to Terraform EKS admin credentials."
+
+  if ! use_terraform_eks_admin_credentials; then
+    die "Authentication failed and Terraform outputs eks_admin_access_key or eks_admin_secret_key are missing/empty. Run tofu apply first or export an AWS identity authorized for cluster ${EKS_CLUSTER_NAME}."
+  fi
+
+  caller_arn="$(current_aws_caller_arn || true)"
+  if [ -n "${caller_arn}" ]; then
+    log "Current AWS caller ARN after Terraform credential switch: ${caller_arn}"
+  else
+    warn "Unable to determine AWS caller ARN after Terraform credential switch."
+  fi
+
+  update_eks_kubeconfig_alias
+  wait_for_eks_kubectl_auth 24 5 || \
+    die "Still unauthenticated to ${EKS_CONTEXT} after Terraform EKS admin credential fallback. Wait for IAM access propagation and verify the EKS access entry/policy association for the terraform-created admin IAM user."
 }
 
 resolve_source_k3s_context() {
@@ -144,6 +227,92 @@ resolve_source_k3s_context() {
     die "SOURCE_K3S_CONTEXT resolved to ${EKS_CONTEXT}. Set SOURCE_K3S_CONTEXT to your local K3s context."
 
   printf '%s\n' "${current_context}"
+}
+
+ensure_argocd_cluster_registration() {
+  log "Registering EKS cluster in ArgoCD via declarative Kubernetes Secret..."
+  local source_context
+  source_context="$(resolve_source_k3s_context)"
+
+  kubectl --context "${source_context}" get namespace argocd >/dev/null 2>&1 || \
+    die "Source context ${source_context} cannot access namespace argocd. Ensure ArgoCD is installed and your credentials for that context can reach the namespace."
+
+  log "Creating argocd-manager ServiceAccount in EKS (${EKS_CONTEXT})..."
+  kubectl --context "${EKS_CONTEXT}" apply --validate=false -f - >/dev/null <<EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-manager
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-manager-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: argocd-manager
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-manager-long-lived-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: argocd-manager
+type: kubernetes.io/service-account-token
+EOF
+
+  log "Waiting for token controller to populate argocd-manager-long-lived-token..."
+  local retries=0
+  until kubectl --context "${EKS_CONTEXT}" -n kube-system \
+    get secret argocd-manager-long-lived-token \
+    -o jsonpath='{.data.token}' 2>/dev/null | grep -q .; do
+    retries=$((retries + 1))
+    [[ $retries -ge 15 ]] && \
+      die "Timed out waiting for argocd-manager token to be populated after 30s."
+    sleep 2
+  done
+  log "Token populated (${retries} retries)."
+
+  local eks_server eks_ca eks_token
+  eks_server=$(kubectl --context "${EKS_CONTEXT}" config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}')
+  eks_ca=$(kubectl --context "${EKS_CONTEXT}" config view --minify --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+  eks_token=$(kubectl --context "${EKS_CONTEXT}" -n kube-system \
+    get secret argocd-manager-long-lived-token \
+    -o jsonpath='{.data.token}' | base64 -d)
+
+  [[ -z "$eks_server" || -z "$eks_ca" || -z "$eks_token" ]] && \
+    die "Failed to extract EKS cluster credentials. Check kubeconfig and EKS connectivity."
+
+  log "Creating ArgoCD Cluster Secret in Hub (${source_context})..."
+  kubectl --context "${source_context}" -n argocd apply -f - >/dev/null <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${ARGOCD_CLUSTER_NAME}-cluster
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: ${ARGOCD_CLUSTER_NAME}
+  server: ${eks_server}
+  config: |
+    {
+      "bearerToken": "${eks_token}",
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "${eks_ca}"
+      }
+    }
+EOF
+  log "EKS cluster '${ARGOCD_CLUSTER_NAME}' successfully registered in ArgoCD."
 }
 
 discover_source_key_secret() {
@@ -178,7 +347,7 @@ discover_source_key_secret() {
 }
 
 migrate_sealed_secrets_key() {
-  local source_context source_secret key_file source_tls_crt target_tls_crt applied_tls_crt
+  local source_context source_secret source_tls_crt source_tls_key source_type target_tls_crt applied_tls_crt
   source_context="$(resolve_source_k3s_context)"
 
   kubectl config get-contexts "${source_context}" >/dev/null 2>&1 || \
@@ -187,11 +356,13 @@ migrate_sealed_secrets_key() {
     die "Target context ${EKS_CONTEXT} not found in kubeconfig."
 
   source_secret="$(discover_source_key_secret "${source_context}")"
-  key_file="${TMP_DIR}/sealed-secrets-master-key.yaml"
 
   source_tls_crt="$(kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}')"
-  [ -n "${source_tls_crt}" ] || \
-    die "Source secret ${source_secret} in ${source_context} is missing tls.crt data."
+  source_tls_key="$(kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.key}')"
+  source_type="$(kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o jsonpath='{.type}')"
+
+  [ -n "${source_tls_crt}" ] && [ -n "${source_tls_key}" ] || \
+    die "Source secret ${source_secret} in ${source_context} is missing tls.crt or tls.key data."
 
   target_tls_crt="$(kubectl --context="${EKS_CONTEXT}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || true)"
 
@@ -200,29 +371,36 @@ migrate_sealed_secrets_key() {
     return 0
   fi
 
-  kubectl --context="${source_context}" -n kube-system get secret "${source_secret}" -o json \
-    | jq 'del(.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.generation,.metadata.managedFields,.status)' \
-    >"${key_file}"
-  kubectl --context="${EKS_CONTEXT}" -n kube-system apply -f "${key_file}" >/dev/null
+  cat <<EOF | kubectl --context="${EKS_CONTEXT}" apply -f - >/dev/null
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${source_secret}
+  namespace: kube-system
+  labels:
+    sealedsecrets.bitnami.com/sealed-secrets-key: "active"
+type: ${source_type}
+data:
+  tls.crt: ${source_tls_crt}
+  tls.key: ${source_tls_key}
+EOF
 
   applied_tls_crt="$(kubectl --context="${EKS_CONTEXT}" -n kube-system get secret "${source_secret}" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || true)"
 
   [ "${applied_tls_crt}" = "${source_tls_crt}" ] || \
     die "Sealed Secrets key transfer verification failed for ${source_secret}."
 
-  log "Sealed Secrets key ${source_secret} migrated from ${source_context} to ${EKS_CONTEXT}."
+  log "Sealed Secrets key ${source_secret} migrated cleanly from ${source_context} to ${EKS_CONTEXT}."
 }
 
 argocd_deregister_cluster() {
-  if ! command -v argocd >/dev/null 2>&1; then
-    warn "argocd CLI is not installed. Skipping cluster deregistration."
-    return 0
-  fi
+  local source_context
+  source_context="$(resolve_source_k3s_context)"
 
-  if argocd cluster rm "${ARGOCD_CLUSTER_NAME}" --yes --grpc-web >/dev/null 2>&1; then
-    log "Deregistered cluster ${ARGOCD_CLUSTER_NAME} from ArgoCD."
+  if kubectl --context="${source_context}" -n argocd delete secret "${ARGOCD_CLUSTER_NAME}-cluster" --ignore-not-found >/dev/null 2>&1; then
+    log "Deregistered cluster ${ARGOCD_CLUSTER_NAME} from ArgoCD (deleted declarative secret)."
   else
-    warn "ArgoCD cluster deregistration skipped or cluster not found: ${ARGOCD_CLUSTER_NAME}."
+    warn "Failed to deregister cluster ${ARGOCD_CLUSTER_NAME} from ArgoCD."
   fi
 }
 
@@ -320,10 +498,13 @@ command_up() {
   mapfile -t tf_args < <(tofu_phase12_args)
 
   run_step "tofu init" tofu_init
-  run_step "tofu apply" tofu -chdir="${TF_DIR}" apply -auto-approve "${tf_args[@]}"
+  run_step "tofu apply" tofu -chdir="${TF_DIR}" apply -auto-approve -lock=false "${tf_args[@]}"
+
   run_step "update kubeconfig context" ensure_kubeconfig_context
   run_step "ArgoCD cluster registration" ensure_argocd_cluster_registration
   run_step "migrate Sealed Secrets key" migrate_sealed_secrets_key
+
+  run_step "restore AWS credentials" restore_original_credentials
 }
 
 command_down() {
@@ -331,9 +512,15 @@ command_down() {
   mapfile -t tf_args < <(tofu_phase12_args)
 
   run_step "tofu init" tofu_init
+
+  run_step "setup EKS admin credentials" use_terraform_eks_admin_credentials
+
   run_step "ArgoCD deregistration" argocd_deregister_cluster
   run_step "PV pre-destroy checks" check_non_ephemeral_pvs
   run_step "delete PVCs and LoadBalancers" delete_ephemeral_workloads
+
+  run_step "restore AWS credentials" restore_original_credentials
+
   run_step "wait for ELB cleanup" wait_for_elb_cleanup
   run_step "tofu destroy" tofu -chdir="${TF_DIR}" destroy -auto-approve "${tf_args[@]}"
 }
@@ -360,7 +547,6 @@ main() {
   require_cmd tofu
   require_cmd kubectl
   require_cmd aws
-  require_cmd jq
 
   BOOTSTRAP_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
 
