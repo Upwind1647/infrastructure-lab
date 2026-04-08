@@ -97,7 +97,8 @@ tofu_phase12_args() {
     "-var=eks_endpoint_public_access=true" \
     "-var=eks_endpoint_private_access=true" \
     "-var=home_ip=${current_ip}/32" \
-    "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}"
+    "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}" \
+    "-var=tofu_state_bucket_force_destroy=true"
 }
 
 current_aws_caller_arn() {
@@ -498,7 +499,7 @@ command_up() {
   mapfile -t tf_args < <(tofu_phase12_args)
 
   run_step "tofu init" tofu_init
-  run_step "tofu apply" tofu -chdir="${TF_DIR}" apply -auto-approve -lock=false "${tf_args[@]}"
+  run_step "tofu apply" tofu -chdir="${TF_DIR}" apply -auto-approve "${tf_args[@]}"
 
   run_step "update kubeconfig context" ensure_kubeconfig_context
   run_step "ArgoCD cluster registration" ensure_argocd_cluster_registration
