@@ -58,6 +58,26 @@ output "budget_alert_sns_topic_arn" {
   value       = try(aws_sns_topic.budget_alerts[0].arn, null)
 }
 
+output "synthetics_canary_name" {
+  description = "CloudWatch Synthetics canary name"
+  value       = try(aws_synthetics_canary.status_api[0].name, null)
+}
+
+output "synthetics_canary_arn" {
+  description = "CloudWatch Synthetics canary ARN"
+  value       = try(aws_synthetics_canary.status_api[0].arn, null)
+}
+
+output "synthetics_alarm_success_percent_name" {
+  description = "CloudWatch alarm name for canary SuccessPercent"
+  value       = try(aws_cloudwatch_metric_alarm.status_api_success_percent[0].alarm_name, null)
+}
+
+output "synthetics_alarm_duration_name" {
+  description = "CloudWatch alarm name for canary Duration"
+  value       = try(aws_cloudwatch_metric_alarm.status_api_duration[0].alarm_name, null)
+}
+
 output "eks_cluster_name" {
   description = "EKS cluster name"
   value       = try(aws_eks_cluster.main[0].name, null)
