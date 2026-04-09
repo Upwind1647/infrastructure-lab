@@ -101,7 +101,6 @@ resource "aws_iam_role_policy" "synthetics_canary" {
         Action = [
           "s3:GetBucketLocation",
           "s3:ListAllMyBuckets",
-          "s3:PutObject"
         ]
         Resource = "*"
       },
@@ -154,9 +153,11 @@ resource "aws_synthetics_canary" "status_api" {
   }
 
   run_config {
-    timeout_in_seconds = 30
-    memory_in_mb       = 960
-    active_tracing     = false
+    timeout_in_seconds = 14
+    environment_variables = {
+      URL_LAB   = "https://northlift.net"
+      URL_CLOUD = "https://aws.northlift.net"
+    }
   }
 
   tags = {
@@ -212,4 +213,22 @@ resource "aws_cloudwatch_metric_alarm" "status_api_duration" {
   }
 
   alarm_actions = var.enable_cost_budget ? [aws_sns_topic.budget_alerts[0].arn] : []
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "synthetics_artifacts" {
+  count  = var.enable_eks ? 1 : 0
+  bucket = aws_s3_bucket.synthetics_artifacts[0].id
+
+  rule {
+    id     = "expire-canary-artifacts"
+    status = "Enabled"
+
+    expiration {
+      days = 14
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+  }
 }

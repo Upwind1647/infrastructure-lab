@@ -1,8 +1,8 @@
 const https = require('https');
 
 const endpoints = [
-  'https://northlift.net',
-  'https://aws.northlift.net',
+    process.env.URL_LAB,
+    process.env.URL_CLOUD
 ];
 
 const requestTimeoutMs = 5000;
@@ -12,7 +12,7 @@ function checkEndpoint(url) {
     const request = https.get(url, { timeout: requestTimeoutMs }, (response) => {
       response.resume();
 
-      if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 400) {
+      if (response.statusCode !== 200) {
         reject(new Error(`Endpoint ${url} returned status ${response.statusCode}`));
         return;
       }
