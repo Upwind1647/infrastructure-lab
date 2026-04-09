@@ -56,7 +56,8 @@ graph LR
 | 9 | **GitOps** | ArgoCD App-of-Apps reconciliation | Done |
 | 10 | **GitOps Secrets & Zero Trust** | Sealed Secrets, External-DNS, Cloudflare Tunnels | Done |
 | 11 | **Cloudflare IaC** | Tunnel DNS + Access policy lifecycle via OpenTofu | Done |
-| 12 | **Hybrid GitOps & EKS FinOps** | Hub-and-Spoke ArgoCD, EKS spoke, budget guardrails, plan-only CI | In Progress |
+| 12 | **Hybrid GitOps & EKS FinOps** | Hub-and-Spoke ArgoCD, EKS spoke, budget guardrails, plan-only CI | Done |
+| 13 | **Full-Picture Observability** | K3s whitebox telemetry + AWS blackbox canaries with unified alerting | In Progress |
 
 ---
 
@@ -252,3 +253,5 @@ Detailed Architecture Decision Records (ADRs) are maintained in the [documentati
 * **[ADR-018](https://upwind1647.github.io/infrastructure-lab/phase11/adr-018-cloudflare-iac/):** Cloudflare Infrastructure as Code
 * **[ADR-019](https://upwind1647.github.io/infrastructure-lab/phase12/adr-019-hybrid-gitops-multi-cluster-architecture/):** Hybrid GitOps and Multi-Cluster Architecture
 * **[ADR-020](https://upwind1647.github.io/infrastructure-lab/phase12/adr-020-eks-provisioning-finops-strategy/):** EKS Provisioning and FinOps Strategy
+* **[ADR-021](https://upwind1647.github.io/infrastructure-lab/phase12/adr-021-ingress-controller-strategy-per-environment/):** Ingress Controller Strategy per Environment
+* **[ADR-022](https://upwind1647.github.io/infrastructure-lab/phase13/adr-022-observability-strategy/):** Observability Strategy for Hybrid GitOps
