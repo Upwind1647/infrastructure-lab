@@ -2,13 +2,17 @@ prometheus:
   prometheusSpec:
     retention: 3d
     scrapeInterval: 60s
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
     resources:
-      requests:
-        memory: 192Mi
-        cpu: 100m
-      limits:
-        memory: 256Mi
-        cpu: 300m
+      requests: { memory: 192Mi, cpu: 100m }
+      limits:   { memory: 256Mi, cpu: 300m }
 
 grafana:
   resources:
@@ -33,7 +37,7 @@ alertmanager:
         memory: 64Mi
         cpu: 50m
 
-kube-state-metrics:
+kubeStateMetrics:
   resources:
     requests:
       memory: 32Mi
@@ -42,7 +46,7 @@ kube-state-metrics:
       memory: 64Mi
       cpu: 50m
 
-prometheus-node-exporter:
+nodeExporter:
   resources:
     requests:
       memory: 16Mi
