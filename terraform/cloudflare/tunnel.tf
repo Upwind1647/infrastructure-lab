@@ -5,6 +5,10 @@ locals {
       hostname = "argocd.northlift.net"
       proxied  = true
     }
+    grafana = {
+      hostname = "grafana.northlift.net"
+      proxied  = true
+    }
   }
 }
 

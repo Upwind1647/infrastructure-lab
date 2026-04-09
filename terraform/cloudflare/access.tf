@@ -5,6 +5,10 @@ locals {
       domain            = "argocd.northlift.net"
       policy_precedence = 1
     }
+    grafana = {
+      domain            = "grafana.northlift.net"
+      policy_precedence = 2
+    }
   }
 
   access_scope_is_account = var.access_scope == "account"
