@@ -11,8 +11,8 @@ prometheus:
             requests:
               storage: 5Gi
     resources:
-      requests: { memory: 192Mi, cpu: 100m }
-      limits:   { memory: 256Mi, cpu: 300m }
+      requests: { memory: 512Mi, cpu: 100m }
+      limits:   { memory: 1Gi, cpu: 300m }
 
 grafana:
   resources:
