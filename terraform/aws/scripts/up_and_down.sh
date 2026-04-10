@@ -97,8 +97,7 @@ tofu_phase12_args() {
     "-var=eks_endpoint_public_access=true" \
     "-var=eks_endpoint_private_access=true" \
     "-var=home_ip=${current_ip}/32" \
-    "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}" \
-    "-var=tofu_state_bucket_force_destroy=true"
+    "-var=budget_alert_email=${BUDGET_ALERT_EMAIL}"
 }
 
 current_aws_caller_arn() {

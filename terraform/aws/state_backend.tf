@@ -15,6 +15,10 @@ resource "aws_s3_bucket" "tofu_state" {
     },
     var.tofu_state_extra_tags,
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_versioning" "tofu_state" {
@@ -70,6 +74,10 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     },
     var.tofu_state_extra_tags,
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 data "aws_caller_identity" "current" {
