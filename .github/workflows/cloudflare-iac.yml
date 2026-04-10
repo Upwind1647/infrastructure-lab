@@ -38,6 +38,7 @@ jobs:
       TF_VAR_tunnel_secret: ${{ secrets.CF_TUNNEL_SECRET }}
       TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_access_scope: "account"
       TF_VAR_github_idp_id: ${{ vars.CLOUDFLARE_GITHUB_IDP_ID }}
       TF_VAR_access_allowed_emails: ${{ vars.CLOUDFLARE_ACCESS_ALLOWED_EMAILS_JSON }}
       TF_BACKEND_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
@@ -148,6 +149,7 @@ jobs:
       TF_VAR_tunnel_secret: ${{ secrets.CF_TUNNEL_SECRET }}
       TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_access_scope: "account"
       TF_VAR_github_idp_id: ${{ vars.CLOUDFLARE_GITHUB_IDP_ID }}
       TF_VAR_access_allowed_emails: ${{ vars.CLOUDFLARE_ACCESS_ALLOWED_EMAILS_JSON }}
       TF_BACKEND_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
@@ -176,6 +178,62 @@ jobs:
             -backend-config="region=${TF_BACKEND_REGION}" \
             -backend-config="dynamodb_table=${TF_BACKEND_LOCK_TABLE}" \
             -backend-config="encrypt=true"
+
+      - name: Reconcile Existing Cloudflare Resources Into State
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          account_id="${TF_VAR_cloudflare_account_id}"
+          zone_id="${TF_VAR_cloudflare_zone_id}"
+          tunnel_name="${TF_VAR_tunnel_name:-lab-internal-services}"
+
+          state_has() {
+            local addr="$1"
+            tofu -chdir="${TF_ROOT}" state list 2>/dev/null | grep -Fqx "$addr"
+          }
+
+          import_if_missing() {
+            local addr="$1"
+            local import_id="$2"
+            if ! state_has "$addr"; then
+              tofu -chdir="${TF_ROOT}" import "$addr" "$import_id"
+            fi
+          }
+
+          tunnel_id="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${account_id}/cfd_tunnel?name=${tunnel_name}" | \
+            jq -r '.result[0].id // empty')"
+          if [[ -n "${tunnel_id}" ]]; then
+            import_if_missing "cloudflare_zero_trust_tunnel_cloudflared.lab_internal" "${account_id}/${tunnel_id}"
+          fi
+
+          for key in argocd grafana; do
+            domain="${key}.northlift.net"
+            app_id="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${account_id}/access/apps" | \
+              jq -r --arg domain "${domain}" '.result[] | select(.domain == $domain) | .id' | head -n1)"
+
+            if [[ -n "${app_id}" ]]; then
+              import_if_missing "cloudflare_zero_trust_access_application.protected[\"${key}\"]" "${account_id}/${app_id}"
+
+              policy_name="${key}-allow"
+              policy_id="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                "https://api.cloudflare.com/client/v4/accounts/${account_id}/access/apps/${app_id}/policies" | \
+                jq -r --arg name "${policy_name}" '.result[] | select(.name == $name) | .id' | head -n1)"
+
+              if [[ -n "${policy_id}" ]]; then
+                import_if_missing "cloudflare_zero_trust_access_policy.allowed_emails[\"${key}\"]" "account/${account_id}/${app_id}/${policy_id}"
+              fi
+            fi
+
+            record_id="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records?name=${domain}&type=CNAME" | \
+              jq -r '.result[0].id // empty')"
+            if [[ -n "${record_id}" ]]; then
+              import_if_missing "cloudflare_record.tunnel_dns[\"${key}\"]" "${zone_id}/${record_id}"
+            fi
+          done
 
       - name: OpenTofu Plan
         run: tofu -chdir="${TF_ROOT}" plan -no-color -out=tfplan
