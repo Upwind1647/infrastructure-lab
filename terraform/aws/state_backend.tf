@@ -178,7 +178,7 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:table/${var.tofu_state_lock_table_name}",
         ]
       },
-{
+      {
         Effect = "Allow"
         Action = [
           "autoscaling:Describe*",
