@@ -141,7 +141,7 @@ resource "aws_synthetics_canary" "status_api" {
   artifact_s3_location = "s3://${aws_s3_bucket.synthetics_artifacts[0].bucket}/artifacts/"
   execution_role_arn   = aws_iam_role.synthetics_canary[0].arn
   handler              = "index.handler"
-  runtime_version      = "syn-nodejs-puppeteer-6.2"
+  runtime_version      = "syn-nodejs-puppeteer-9.1"
   zip_file             = data.archive_file.status_api_canary[0].output_path
   start_canary         = true
 
@@ -222,6 +222,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "synthetics_artifacts" {
   rule {
     id     = "expire-canary-artifacts"
     status = "Enabled"
+
+    filter {}
 
     expiration {
       days = 14
