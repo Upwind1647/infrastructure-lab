@@ -178,12 +178,12 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:table/${var.tofu_state_lock_table_name}",
         ]
       },
-      {
+{
         Effect = "Allow"
         Action = [
           "autoscaling:Describe*",
-          "budgets:ViewBudget",
           "budgets:ListTagsForResource",
+          "budgets:ViewBudget",
           "cloudwatch:DescribeAlarms",
           "cloudwatch:GetMetricData",
           "cloudwatch:GetMetricStatistics",
@@ -199,24 +199,31 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
           "rds:Describe*",
           "rds:ListTagsForResource",
           "resourcegroupstaggingapi:GetResources",
+          "s3:GetAccelerateConfiguration",
           "s3:GetBucketAcl",
+          "s3:GetBucketCORS",
           "s3:GetBucketLocation",
+          "s3:GetBucketLogging",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketOwnershipControls",
           "s3:GetBucketPolicy",
           "s3:GetBucketPolicyStatus",
           "s3:GetBucketPublicAccessBlock",
+          "s3:GetBucketRequestPayment",
           "s3:GetBucketTagging",
           "s3:GetBucketVersioning",
+          "s3:GetBucketWebsite",
           "s3:GetEncryptionConfiguration",
           "s3:GetLifecycleConfiguration",
           "s3:ListBucket",
-          "sns:GetTopicAttributes",
           "sns:GetSubscriptionAttributes",
+          "sns:GetTopicAttributes",
           "sns:ListSubscriptionsByTopic",
           "sns:ListTagsForResource",
+          "sts:GetCallerIdentity",
           "synthetics:Describe*",
           "synthetics:Get*",
-          "synthetics:List*",
-          "sts:GetCallerIdentity",
+          "synthetics:List*"
         ]
         Resource = "*"
       },
