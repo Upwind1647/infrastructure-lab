@@ -67,6 +67,11 @@ Extend the platform into a Hub-and-Spoke multi-cluster model where on-prem ArgoC
 - [ADR-020: EKS Provisioning and FinOps Strategy](phase12/adr-020-eks-provisioning-finops-strategy.md)
 - [ADR-021: Ingress Controller Strategy per Environment](phase12/adr-021-ingress-controller-strategy-per-environment.md)
 
+### Phase 13: Full-Picture Observability
+Add a constrained in-cluster whitebox stack (Prometheus, Loki, Grafana) and a lifecycle-coupled AWS blackbox canary layer for external uptime validation.
+- [Observability Runbook](phase13/observability.md)
+- [ADR-022: Observability Strategy for Hybrid GitOps](phase13/adr-022-observability-strategy.md)
+
 ---
 
 ## Tech Stack

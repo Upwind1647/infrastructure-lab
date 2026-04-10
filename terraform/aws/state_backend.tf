@@ -15,6 +15,10 @@ resource "aws_s3_bucket" "tofu_state" {
     },
     var.tofu_state_extra_tags,
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_versioning" "tofu_state" {
@@ -70,6 +74,10 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
     },
     var.tofu_state_extra_tags,
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 data "aws_caller_identity" "current" {
@@ -174,22 +182,48 @@ resource "aws_iam_role_policy" "github_actions_tofu_policy" {
         Effect = "Allow"
         Action = [
           "autoscaling:Describe*",
-          "budgets:ViewBudget",
           "budgets:ListTagsForResource",
+          "budgets:ViewBudget",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListTagsForResource",
           "ec2:Describe*",
           "eks:Describe*",
           "eks:List*",
           "elasticloadbalancing:Describe*",
           "iam:Get*",
           "iam:List*",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
           "rds:Describe*",
           "rds:ListTagsForResource",
-          "resourcegroupstaggingapi:GetResources",
-          "sns:GetTopicAttributes",
+          "s3:GetAccelerateConfiguration",
+          "s3:GetBucketAcl",
+          "s3:GetBucketCORS",
+          "s3:GetBucketLocation",
+          "s3:GetBucketLogging",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketOwnershipControls",
+          "s3:GetBucketPolicy",
+          "s3:GetBucketPolicyStatus",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:GetBucketRequestPayment",
+          "s3:GetBucketTagging",
+          "s3:GetBucketVersioning",
+          "s3:GetBucketWebsite",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetReplicationConfiguration",
+          "s3:ListBucket",
           "sns:GetSubscriptionAttributes",
+          "sns:GetTopicAttributes",
           "sns:ListSubscriptionsByTopic",
           "sns:ListTagsForResource",
           "sts:GetCallerIdentity",
+          "synthetics:Describe*",
+          "synthetics:Get*",
+          "synthetics:List*"
         ]
         Resource = "*"
       },

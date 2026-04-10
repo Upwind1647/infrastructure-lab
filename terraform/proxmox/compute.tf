@@ -3,8 +3,8 @@ resource "proxmox_virtual_environment_download_file" "debian_cloud_image" {
   datastore_id = "local"
   node_name    = var.proxmox_node_name
 
-  url          = "https://cdimage.debian.org/cdimage/cloud/trixie/daily/latest/debian-13-generic-amd64-daily.qcow2"
-  file_name    = "debian-13-generic-amd64.img"
+  url       = "https://cdimage.debian.org/cdimage/cloud/trixie/daily/latest/debian-13-generic-amd64-daily.qcow2"
+  file_name = "debian-13-generic-amd64.img"
 }
 
 # 1. Cloud-Init Bootstrapping Script
@@ -80,7 +80,7 @@ resource "proxmox_virtual_environment_vm" "k3s_node" {
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 6144 # increased from 4096 (see ADR-022 capacity rationale)
   }
 
   disk {
