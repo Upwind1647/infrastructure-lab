@@ -24,7 +24,7 @@ promtail:
       memory: 16Mi
       cpu: 10m
     limits:
-      memory: 32Mi
+      memory: 128Mi
       cpu: 30m
 
 grafana:
