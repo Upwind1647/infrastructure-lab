@@ -47,11 +47,11 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
             mkdir -p /home/adminsetup/.kube
             cp /etc/rancher/k3s/k3s.yaml /home/adminsetup/.kube/config
             PRIMARY_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i <= NF; i++) if ($i == "src") {print $(i+1); exit}}' || true)"
-            if [[ -z "${PRIMARY_IP}" ]]; then
+            if [[ -z "$${PRIMARY_IP}" ]]; then
               PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
             fi
-            if [[ -n "${PRIMARY_IP}" ]]; then
-              sed -i "s#https://127.0.0.1:6443#https://${PRIMARY_IP}:6443#" /home/adminsetup/.kube/config
+            if [[ -n "$${PRIMARY_IP}" ]]; then
+              sed -i "s#https://127.0.0.1:6443#https://$${PRIMARY_IP}:6443#" /home/adminsetup/.kube/config
             fi
             chown -R adminsetup:adminsetup /home/adminsetup/.kube
             chmod 600 /home/adminsetup/.kube/config
