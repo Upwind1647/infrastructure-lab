@@ -1,0 +1,18 @@
+replicaCount: 2
+
+cloudflare:
+  tunnelName: lab-internal-services
+  secretName: cloudflare-tunnel-credentials
+  ingress:
+    - hostname: argocd.northlift.net
+      service: http://argocd-server.argocd.svc.cluster.local:80
+    - hostname: grafana.northlift.net
+      service: http://observability-grafana.monitoring.svc.cluster.local:80
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 150m
+    memory: 256Mi

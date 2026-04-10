@@ -19,6 +19,8 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "lab_internal" {
   config_src = "cloudflare"
 
   lifecycle {
+    prevent_destroy = true
+
     ignore_changes = [
       # Existing tunnel imports do not retain these create-time fields in state.
       config_src,

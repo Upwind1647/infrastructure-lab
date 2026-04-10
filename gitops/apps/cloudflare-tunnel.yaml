@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://cloudflare.github.io/helm-charts
-    chart: cloudflare-tunnel
-    targetRevision: 0.3.2
+    repoURL: https://github.com/Upwind1647/infrastructure-lab.git
+    targetRevision: main
+    path: helm/cloudflare-tunnel
     helm:
       releaseName: cloudflare-tunnel
       values: |
