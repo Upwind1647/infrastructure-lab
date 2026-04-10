@@ -1,11 +1,11 @@
 output "tunnel_id" {
   description = "Cloudflare Tunnel UUID"
-  value       = cloudflare_tunnel.lab_internal.id
+  value       = cloudflare_zero_trust_tunnel_cloudflared.lab_internal.id
 }
 
 output "tunnel_cname_target" {
   description = "CNAME target used by tunnel DNS hostnames"
-  value       = cloudflare_tunnel.lab_internal.cname
+  value       = cloudflare_zero_trust_tunnel_cloudflared.lab_internal.cname
 }
 
 output "access_application_ids" {
