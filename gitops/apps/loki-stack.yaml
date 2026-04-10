@@ -7,17 +7,58 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   project: default
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: loki
+      namespace: monitoring
+      jsonPointers:
+        - /spec/template/spec/containers/0/env
+        - /spec/template/spec/containers/0/volumeMounts/2/subPath
   sources:
     - repoURL: https://grafana.github.io/helm-charts
       chart: loki-stack
       targetRevision: 2.10.2
       helm:
         releaseName: loki
-        valueFiles:
-          - $values/gitops/values-loki.yaml
-    - repoURL: https://github.com/Upwind1647/infrastructure-lab.git
-      targetRevision: main
-      ref: values
+        values: |
+          loki:
+            enabled: true
+            isDefault: false
+            persistence:
+              enabled: true
+              storageClassName: local-path
+              size: 5Gi
+            resources:
+              requests:
+                memory: 64Mi
+                cpu: 50m
+              limits:
+                memory: 512Mi
+                cpu: 150m
+            config:
+              table_manager:
+                retention_deletes_enabled: true
+                retention_period: 72h
+
+          promtail:
+            enabled: true
+            resources:
+              requests:
+                memory: 16Mi
+                cpu: 10m
+              limits:
+                memory: 128Mi
+                cpu: 30m
+
+          grafana:
+            enabled: false
+
+          prometheus:
+            enabled: false
+
+          fluent-bit:
+            enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -33,5 +74,3 @@ spec:
         maxDuration: 3m
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
-      - ApplyOutOfSyncOnly=true
