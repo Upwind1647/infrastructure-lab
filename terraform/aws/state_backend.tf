@@ -17,7 +17,7 @@ resource "aws_s3_bucket" "tofu_state" {
   )
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -76,7 +76,7 @@ resource "aws_dynamodb_table" "tofu_state_locks" {
   )
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

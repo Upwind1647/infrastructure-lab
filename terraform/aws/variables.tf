@@ -71,7 +71,7 @@ variable "tofu_state_lock_table_name" {
 variable "tofu_state_bucket_force_destroy" {
   description = "Allow force-destroy of the OpenTofu state bucket when tearing down the backend"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "tofu_state_extra_tags" {
