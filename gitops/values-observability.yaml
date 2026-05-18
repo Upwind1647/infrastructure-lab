@@ -22,10 +22,105 @@ grafana:
     limits:
       memory: 128Mi
       cpu: 150m
+  envValueFrom:
+    GRAFANA_POSTGRES_HOST:
+      secretKeyRef:
+        name: grafana-postgres-datasource
+        key: host
+        optional: true
+    GRAFANA_POSTGRES_PORT:
+      secretKeyRef:
+        name: grafana-postgres-datasource
+        key: port
+        optional: true
+    GRAFANA_POSTGRES_DB:
+      secretKeyRef:
+        name: grafana-postgres-datasource
+        key: database
+        optional: true
+    GRAFANA_POSTGRES_USER:
+      secretKeyRef:
+        name: grafana-postgres-datasource
+        key: username
+        optional: true
+    GRAFANA_POSTGRES_PASSWORD:
+      secretKeyRef:
+        name: grafana-postgres-datasource
+        key: password
+        optional: true
   additionalDataSources:
     - name: Loki
       type: loki
       url: http://loki:3100
+    - name: PostgreSQL-DORA
+      type: postgres
+      url: ${GRAFANA_POSTGRES_HOST}:${GRAFANA_POSTGRES_PORT}
+      user: ${GRAFANA_POSTGRES_USER}
+      database: ${GRAFANA_POSTGRES_DB}
+      isDefault: false
+      jsonData:
+        sslmode: disable
+        postgresVersion: 1500
+        timescaledb: false
+      secureJsonData:
+        password: ${GRAFANA_POSTGRES_PASSWORD}
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: dora
+          orgId: 1
+          folder: DORA
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/dora
+  dashboards:
+    dora:
+      status-api-dora:
+        json: |
+          {
+            "title": "Status API DORA Metrics",
+            "uid": "status-api-dora",
+            "schemaVersion": 39,
+            "version": 1,
+            "refresh": "30s",
+            "timezone": "browser",
+            "tags": ["dora", "status-api"],
+            "panels": [
+              {
+                "id": 1,
+                "type": "timeseries",
+                "title": "Deployment Frequency",
+                "datasource": "PostgreSQL-DORA",
+                "gridPos": {"h": 9, "w": 24, "x": 0, "y": 0},
+                "targets": [
+                  {
+                    "refId": "A",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT $__timeGroupAlias(deployed_at, $__interval), COUNT(*)::double precision AS value FROM deployments WHERE $__timeFilter(deployed_at) GROUP BY 1 ORDER BY 1"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "type": "timeseries",
+                "title": "Lead Time for Changes (hours)",
+                "datasource": "PostgreSQL-DORA",
+                "gridPos": {"h": 9, "w": 24, "x": 0, "y": 9},
+                "targets": [
+                  {
+                    "refId": "A",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT $__timeGroupAlias(deployed_at, $__interval), AVG(EXTRACT(EPOCH FROM (deployed_at - committed_at)) / 3600.0) AS value FROM deployments WHERE $__timeFilter(deployed_at) GROUP BY 1 ORDER BY 1"
+                  }
+                ]
+              }
+            ]
+          }
 
 alertmanager:
   alertmanagerSpec:

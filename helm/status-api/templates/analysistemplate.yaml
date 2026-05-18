@@ -1,0 +1,37 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.rollout.analysis.name }}
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+spec:
+  metrics:
+    - name: success-rate
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      inconclusiveLimit: {{ .Values.rollout.analysis.inconclusiveLimit }}
+      successCondition: result[0] >= {{ .Values.rollout.analysis.successRateMin }}
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.analysis.prometheusAddress | quote }}
+          query: |
+            sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}",handler!="/metrics",status!~"5.."}[2m]))
+            /
+            clamp_min(sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}",handler!="/metrics"}[2m])), 1)
+    - name: avg-request-duration
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      inconclusiveLimit: {{ .Values.rollout.analysis.inconclusiveLimit }}
+      successCondition: result[0] <= {{ .Values.rollout.analysis.avgDurationSecondsMax }}
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.analysis.prometheusAddress | quote }}
+          query: |
+            sum(rate(http_request_duration_seconds_sum{namespace="{{ .Release.Namespace }}",handler!="/metrics"}[2m]))
+            /
+            clamp_min(sum(rate(http_request_duration_seconds_count{namespace="{{ .Release.Namespace }}",handler!="/metrics"}[2m])), 1)
+{{- end }}

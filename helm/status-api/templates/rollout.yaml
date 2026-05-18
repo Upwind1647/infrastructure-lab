@@ -1,8 +1,8 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
-  name: {{ .Release.Name }}-deployment
+  name: {{ .Release.Name }}-rollout
   labels:
     app: {{ .Chart.Name }}
     release: {{ .Release.Name }}
@@ -10,8 +10,6 @@ spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
-  strategy:
-    {{ toYaml .Values.strategy | nindent 4 }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
@@ -67,4 +65,18 @@ spec:
             {{ toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{ toYaml .Values.readinessProbe | nindent 12 }}
+  strategy:
+    canary:
+      stableService: {{ .Release.Name }}-service
+      canaryService: {{ .Release.Name }}-canary
+      maxSurge: {{ .Values.rollout.maxSurge | quote }}
+      maxUnavailable: {{ .Values.rollout.maxUnavailable }}
+      {{- if eq .Values.rollout.trafficRouting.provider "nginx" }}
+      trafficRouting:
+        nginx:
+          stableIngress: {{ default (printf "%s-ingress" .Release.Name) .Values.rollout.trafficRouting.nginx.stableIngress | quote }}
+          annotationPrefix: {{ .Values.rollout.trafficRouting.nginx.annotationPrefix | quote }}
+      {{- end }}
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
 {{- end }}

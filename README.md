@@ -2,12 +2,12 @@
 
 [![Build & Smoke Test](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/docker-builder.yml)
 [![Cloudflare IaC](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/cloudflare-iac.yml/badge.svg)](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/cloudflare-iac.yml)
-[![Docs](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/publish_docs.yml/badge.svg)](https://upwind1647.github.io/infrastructure-lab/)
+[![Docs](https://github.com/Upwind1647/infrastructure-lab/actions/workflows/publish_docs.yml/badge.svg)](https://northlift.github.io/infrastructure-lab/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Upwind1647/infrastructure-lab/blob/main/LICENSE)
 
 This repository serves as a project to showcase modern infrastructure provisioning, security hardening, and cloud-native deployments. It is designed to be fully reproducible, secure by default, and treated as Infrastructure as Code (IaC).
 
-> **Full documentation:** [upwind1647.github.io/infrastructure-lab](https://upwind1647.github.io/infrastructure-lab/)
+> **Full documentation:** [northlift.github.io/infrastructure-lab](https://northlift.github.io/infrastructure-lab/)
 
 ---
 
@@ -57,7 +57,7 @@ graph LR
 | 10 | **GitOps Secrets & Zero Trust** | Sealed Secrets, External-DNS, Cloudflare Tunnels | Done |
 | 11 | **Cloudflare IaC** | Tunnel DNS + Access policy lifecycle via OpenTofu | Done |
 | 12 | **Hybrid GitOps & EKS FinOps** | Hub-and-Spoke ArgoCD, EKS spoke, budget guardrails, plan-only CI | Done |
-| 13 | **Full-Picture Observability** | K3s whitebox telemetry + AWS blackbox canaries with unified alerting | In Progress |
+| 13 | **Full-Picture Observability** | K3s whitebox telemetry + AWS blackbox canaries with unified alerting | Done |
 
 ---
 
@@ -99,7 +99,7 @@ graph LR
 docker run -d --name status-api \
   -p 8000:8000 \
   -e APP_ENV=dev \
-  ghcr.io/upwind1647/status-api:<SHORT_SHA>
+  ghcr.io/northlift/status-api:<SHORT_SHA>
 
 curl http://localhost:8000/health
 ```
@@ -227,31 +227,39 @@ BUDGET_ALERT_EMAIL="you@example.com" ./scripts/up_and_down.sh down
 └── Dockerfile              # Multi-stage production build
 ```
 
+## Phase 14 Ops Helpers
+
+Generate SealedSecrets for rollout event ingestion and DORA datasource credentials:
+
+```bash
+./scripts/generate_phase14_sealed_secrets.sh --help
+```
+
 ---
 
 ## Key Design Decisions
 
-Detailed Architecture Decision Records (ADRs) are maintained in the [documentation](https://upwind1647.github.io/infrastructure-lab/):
+Detailed Architecture Decision Records (ADRs) are maintained in the [documentation](https://northlift.github.io/infrastructure-lab/):
 
-* **[ADR-001](https://upwind1647.github.io/infrastructure-lab/phase1/adr-001-hardening-script/):** Bash over Ansible for constrained bootstrapping
-* **[ADR-002](https://upwind1647.github.io/infrastructure-lab/phase2/aws-clickops-deployment/):** Manual AWS validation over immediate Terraform automation
-* **[ADR-003](https://upwind1647.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
-* **[ADR-004](https://upwind1647.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
-* **[ADR-005](https://upwind1647.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
-* **[ADR-006](https://upwind1647.github.io/infrastructure-lab/phase5/adr-006-k3s/):** Lightweight Kubernetes (K3s) on Proxmox VM
-* **[ADR-007](https://upwind1647.github.io/infrastructure-lab/phase5/adr-007-proxmox-iac/):** Infrastructure as Code for Proxmox
-* **[ADR-008](https://upwind1647.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR
-* **[ADR-009](https://upwind1647.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
-* **[ADR-010](https://upwind1647.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
-* **[ADR-011](https://upwind1647.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
-* **[ADR-012](https://upwind1647.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
-* **[ADR-013](https://upwind1647.github.io/infrastructure-lab/phase9/adr-013-gitops-argocd/):** GitOps with ArgoCD
-* **[ADR-014](https://upwind1647.github.io/infrastructure-lab/phase10/adr-014-gitops-secrets-management-with-sealed-secrets/):** GitOps Secrets Management with Sealed Secrets
-* **[ADR-015](https://upwind1647.github.io/infrastructure-lab/phase10/adr-015-automated-dns-management-with-external-dns/):** Automated DNS Management with External-DNS
-* **[ADR-016](https://upwind1647.github.io/infrastructure-lab/phase10/adr-016-zero-trust-access-with-cloudflare-tunnels/):** Zero Trust Access with Cloudflare Tunnels
-* **[ADR-017](https://upwind1647.github.io/infrastructure-lab/phase10/adr-017-argocd-self-management-and-gitops-maturity/):** ArgoCD Self-Management and GitOps Maturity
-* **[ADR-018](https://upwind1647.github.io/infrastructure-lab/phase11/adr-018-cloudflare-iac/):** Cloudflare Infrastructure as Code
-* **[ADR-019](https://upwind1647.github.io/infrastructure-lab/phase12/adr-019-hybrid-gitops-multi-cluster-architecture/):** Hybrid GitOps and Multi-Cluster Architecture
-* **[ADR-020](https://upwind1647.github.io/infrastructure-lab/phase12/adr-020-eks-provisioning-finops-strategy/):** EKS Provisioning and FinOps Strategy
-* **[ADR-021](https://upwind1647.github.io/infrastructure-lab/phase12/adr-021-ingress-controller-strategy-per-environment/):** Ingress Controller Strategy per Environment
-* **[ADR-022](https://upwind1647.github.io/infrastructure-lab/phase13/adr-022-observability-strategy/):** Observability Strategy for Hybrid GitOps
+* **[ADR-001](https://northlift.github.io/infrastructure-lab/phase1/adr-001-hardening-script/):** Bash over Ansible for constrained bootstrapping
+* **[ADR-002](https://northlift.github.io/infrastructure-lab/phase2/aws-clickops-deployment/):** Manual AWS validation over immediate Terraform automation
+* **[ADR-003](https://northlift.github.io/infrastructure-lab/phase3/containerization/):** Cloud-native CI builds over local `docker build`
+* **[ADR-004](https://northlift.github.io/infrastructure-lab/phase3/adr-004-workload-architecture):** Container Workload Architecture & Watchdog
+* **[ADR-005](https://northlift.github.io/infrastructure-lab/phase4/adr-005-managed-database/):** Managed Database (AWS RDS) vs. Self-Hosted EC2
+* **[ADR-006](https://northlift.github.io/infrastructure-lab/phase5/adr-006-k3s/):** Lightweight Kubernetes (K3s) on Proxmox VM
+* **[ADR-007](https://northlift.github.io/infrastructure-lab/phase5/adr-007-proxmox-iac/):** Infrastructure as Code for Proxmox
+* **[ADR-008](https://northlift.github.io/infrastructure-lab/phase6/adr-008-persistence/):** Redis Persistence & DR
+* **[ADR-009](https://northlift.github.io/infrastructure-lab/phase7/adr-009-ingress-tls/):** Traefik Ingress
+* **[ADR-010](https://northlift.github.io/infrastructure-lab/phase7/adr-010-dns01/):** Cloudflare DNS-01
+* **[ADR-011](https://northlift.github.io/infrastructure-lab/phase8/adr-011-helm-packaging/):** Helm Package Management
+* **[ADR-012](https://northlift.github.io/infrastructure-lab/phase8/adr-012-redis-helm/):** First-Party Redis Helm Chart
+* **[ADR-013](https://northlift.github.io/infrastructure-lab/phase9/adr-013-gitops-argocd/):** GitOps with ArgoCD
+* **[ADR-014](https://northlift.github.io/infrastructure-lab/phase10/adr-014-gitops-secrets-management-with-sealed-secrets/):** GitOps Secrets Management with Sealed Secrets
+* **[ADR-015](https://northlift.github.io/infrastructure-lab/phase10/adr-015-automated-dns-management-with-external-dns/):** Automated DNS Management with External-DNS
+* **[ADR-016](https://northlift.github.io/infrastructure-lab/phase10/adr-016-zero-trust-access-with-cloudflare-tunnels/):** Zero Trust Access with Cloudflare Tunnels
+* **[ADR-017](https://northlift.github.io/infrastructure-lab/phase10/adr-017-argocd-self-management-and-gitops-maturity/):** ArgoCD Self-Management and GitOps Maturity
+* **[ADR-018](https://northlift.github.io/infrastructure-lab/phase11/adr-018-cloudflare-iac/):** Cloudflare Infrastructure as Code
+* **[ADR-019](https://northlift.github.io/infrastructure-lab/phase12/adr-019-hybrid-gitops-multi-cluster-architecture/):** Hybrid GitOps and Multi-Cluster Architecture
+* **[ADR-020](https://northlift.github.io/infrastructure-lab/phase12/adr-020-eks-provisioning-finops-strategy/):** EKS Provisioning and FinOps Strategy
+* **[ADR-021](https://northlift.github.io/infrastructure-lab/phase12/adr-021-ingress-controller-strategy-per-environment/):** Ingress Controller Strategy per Environment
+* **[ADR-022](https://northlift.github.io/infrastructure-lab/phase13/adr-022-observability-strategy/):** Observability Strategy for Hybrid GitOps

@@ -57,6 +57,9 @@ nav:
   - "Phase 13: Full-Picture Observability":
       - Observability Runbook: phase13/observability.md
       - ADR-022 Observability Strategy for Hybrid GitOps: phase13/adr-022-observability-strategy.md
+  - "Phase 14: Progressive Delivery":
+      - Progressive Delivery Runbook: phase14/progressive-delivery.md
+      - ADR-023 Progressive Delivery Strategy: phase14/adr-023-progressive-delivery-strategy.md
 
 markdown_extensions:
   - admonition

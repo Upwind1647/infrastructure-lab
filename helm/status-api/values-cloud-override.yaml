@@ -4,6 +4,21 @@ env:
   appEnv: "production-cloud"
   # Deliberately disabled in the EKS spoke: /hits should degrade when Redis is absent.
   redisHost: ""
+  databaseUrlSecret:
+    name: status-api-db
+    key: url
+  deployEventTokenSecret:
+    name: status-api-deploy-event-token
+    key: token
+
+rollout:
+  trafficRouting:
+    provider: nginx
+    nginx:
+      stableIngress: status-api-cloud-ingress
+
+deployEvent:
+  environment: production-cloud
 
 ingress:
   className: "nginx"

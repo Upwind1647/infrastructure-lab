@@ -4,8 +4,12 @@ version = "0.1.0"
 description = "Infrastructure Lab Status API"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.17.0",
     "fastapi>=0.135.1",
+    "prometheus-fastapi-instrumentator>=7.1.0",
+    "psycopg[binary]>=3.2.10",
     "redis>=7.3.0",
+    "sqlalchemy>=2.0.44",
     "uvicorn>=0.41.0",
 ]
 

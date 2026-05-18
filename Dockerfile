@@ -37,7 +37,8 @@ RUN groupadd -r appgroup && \
 
 # Copy the virtual environment and the application
 COPY --from=builder /app/.venv /app/.venv
-COPY --chown=appuser:appgroup app.py .
+COPY --chown=appuser:appgroup app.py db.py models.py schemas.py alembic.ini ./
+COPY --chown=appuser:appgroup alembic ./alembic
 
 USER appuser
 

@@ -3,10 +3,20 @@ import sys
 import logging
 import json
 from contextlib import asynccontextmanager
+from datetime import timezone
+from typing import Generator
 
-from fastapi import FastAPI, Response, HTTPException
-import uvicorn
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
+from prometheus_fastapi_instrumentator import Instrumentator
 import redis
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
+import uvicorn
+
+from db import DATABASE_URL, Base, SessionLocal, engine
+from models import DeploymentEvent
+from schemas import DeploymentEventCreate, DeploymentEventRead
 
 
 # JSON Formatter for Logging
@@ -46,6 +56,18 @@ redis_client = redis.Redis(
 )
 
 
+def get_deploy_event_token() -> str:
+    return os.getenv("DEPLOY_EVENT_TOKEN", "")
+
+
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 # Application Lifespan Event Management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,6 +79,15 @@ async def lifespan(app: FastAPI):
     except redis.exceptions.RedisError as exc:
         logger.warning("Redis unavailable at startup (%s): %s", REDIS_HOST, exc)
 
+    if DATABASE_URL.startswith("sqlite"):
+        Base.metadata.create_all(bind=engine)
+
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        logger.warning("Database unavailable at startup: %s", exc)
+
     yield
 
     # Log the shutdown event
@@ -65,6 +96,8 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI and attach lifespan handler
 app = FastAPI(lifespan=lifespan)
+instrumentator = Instrumentator(excluded_handlers=["/metrics"])
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 
 # API Route Definitions
@@ -77,11 +110,6 @@ def read_root():
 @app.get("/health")
 def health_check():
     return Response(status_code=200)
-
-
-@app.get("/metrics")
-def metrics():
-    return {"cpu_usage": 12, "memory_usage": "45MB", "requests_total": 105}
 
 
 # Count endpoint hits using Redis
@@ -98,6 +126,76 @@ def read_hits():
     except redis.exceptions.RedisError as exc:
         logger.error("Redis operation failed: %s", exc)
         raise HTTPException(status_code=503, detail="Redis unavailable")
+
+
+@app.post(
+    "/api/deployments",
+    response_model=DeploymentEventRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_deployment_event(
+    payload: DeploymentEventCreate,
+    db: Session = Depends(get_db),
+    deploy_token: str | None = Header(default=None, alias="X-Deploy-Token"),
+):
+    expected_token = get_deploy_event_token()
+    if not expected_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Deployment event token is not configured",
+        )
+    if deploy_token != expected_token:
+        raise HTTPException(status_code=401, detail="Invalid deployment token")
+
+    committed_at = payload.committed_at
+    if committed_at.tzinfo is None:
+        committed_at = committed_at.replace(tzinfo=timezone.utc)
+
+    event = DeploymentEvent(
+        git_sha=payload.git_sha,
+        committed_at=committed_at,
+        environment=payload.environment,
+        status=payload.status,
+    )
+    db.add(event)
+
+    try:
+        db.commit()
+        db.refresh(event)
+        return event
+    except IntegrityError:
+        db.rollback()
+        existing = db.scalar(
+            select(DeploymentEvent).where(
+                DeploymentEvent.git_sha == payload.git_sha,
+                DeploymentEvent.environment == payload.environment,
+                DeploymentEvent.status == payload.status,
+                DeploymentEvent.committed_at == committed_at,
+            )
+        )
+        if existing is None:
+            raise HTTPException(status_code=409, detail="Duplicate deployment event")
+        return existing
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Failed to persist deployment event: %s", exc)
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@app.get("/api/deployments", response_model=list[DeploymentEventRead])
+def list_deployment_events(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=50, ge=1, le=500),
+    environment: str | None = Query(default=None, min_length=2, max_length=64),
+):
+    query = (
+        select(DeploymentEvent)
+        .order_by(DeploymentEvent.deployed_at.desc())
+        .limit(limit)
+    )
+    if environment:
+        query = query.where(DeploymentEvent.environment == environment)
+    return list(db.scalars(query).all())
 
 
 # Application entrypoint
