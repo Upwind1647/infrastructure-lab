@@ -10,6 +10,50 @@ strategy:
     maxUnavailable: 1
     maxSurge: 1
 
+rollout:
+  enabled: true
+  maxSurge: "25%"
+  maxUnavailable: 0
+  canary:
+    steps:
+      - setWeight: 20
+      - pause:
+          duration: 60s
+      - analysis:
+          templates:
+            - templateName: status-api-canary-analysis
+      - setWeight: 50
+      - pause:
+          duration: 120s
+  trafficRouting:
+    provider: none
+    nginx:
+      stableIngress: ""
+      annotationPrefix: nginx.ingress.kubernetes.io
+  analysis:
+    enabled: true
+    name: status-api-canary-analysis
+    interval: 60s
+    count: 2
+    failureLimit: 1
+    inconclusiveLimit: 1
+    successRateMin: 0.95
+    avgDurationSecondsMax: 0.5
+    prometheusAddress: http://observability-prometheus.monitoring.svc.cluster.local:9090
+
+serviceMonitor:
+  enabled: false
+  labels: {}
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+
+deployEvent:
+  enabled: true
+  endpoint: ""
+  environment: ""
+  hookImage: gcr.io/go-containerregistry/crane:debug
+
 image:
   repository: ghcr.io/upwind1647/status-api
   tag: "00280f7"
@@ -18,10 +62,44 @@ image:
 env:
   appEnv: "cluster"
   redisHost: "redis-service"
+  databaseUrl: ""
+  databaseUrlSecret:
+    name: ""
+    key: "url"
+  deployEventTokenSecret:
+    name: ""
+    key: "token"
+
+database:
+  localPostgres:
+    enabled: false
+    image:
+      repository: postgres
+      tag: "16-alpine"
+      pullPolicy: IfNotPresent
+    service:
+      port: 5432
+    auth:
+      database: appdb
+      username: appuser
+      password: appuserpassword
+    storage:
+      size: 5Gi
+      className: local-path
+      accessModes:
+        - ReadWriteOnce
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "128Mi"
+      limits:
+        cpu: "250m"
+        memory: "256Mi"
 
 service:
   port: 80
   targetPort: 8000
+  annotations: {}
 
 ingress:
   enabled: true

@@ -3,6 +3,25 @@ replicaCount: 2
 
 env:
   appEnv: "cluster"
+  deployEventTokenSecret:
+    name: status-api-deploy-event-token
+    key: token
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: observability
+
+rollout:
+  trafficRouting:
+    provider: none
+
+deployEvent:
+  environment: cluster
+
+database:
+  localPostgres:
+    enabled: true
 
 ingress:
   host: "lab.northlift.net"

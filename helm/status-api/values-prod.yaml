@@ -14,3 +14,9 @@ resources:
     memory: "256Mi"
 env:
   appEnv: "production"
+  databaseUrlSecret:
+    name: "status-api-db"
+    key: "url"
+  deployEventTokenSecret:
+    name: "status-api-deploy-event-token"
+    key: "token"

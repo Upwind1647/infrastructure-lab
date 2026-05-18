@@ -1,0 +1,62 @@
+{{- if .Values.database.localPostgres.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    app: {{ .Chart.Name }}-postgres
+    release: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}-postgres
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}-postgres
+        release: {{ .Release.Name }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: "{{ .Values.database.localPostgres.image.repository }}:{{ .Values.database.localPostgres.image.tag }}"
+          imagePullPolicy: {{ .Values.database.localPostgres.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.database.localPostgres.auth.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.database.localPostgres.auth.username | quote }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.database.localPostgres.auth.password | quote }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.database.localPostgres.service.port }}
+          resources:
+            {{ toYaml .Values.database.localPostgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          {{- toYaml .Values.database.localPostgres.storage.accessModes | nindent 10 }}
+        storageClassName: {{ .Values.database.localPostgres.storage.className }}
+        resources:
+          requests:
+            storage: {{ .Values.database.localPostgres.storage.size }}
+{{- end }}

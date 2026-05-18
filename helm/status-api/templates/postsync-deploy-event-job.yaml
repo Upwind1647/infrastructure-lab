@@ -1,0 +1,77 @@
+{{- if and .Values.deployEvent.enabled .Values.rollout.enabled .Values.env.deployEventTokenSecret.name }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-deploy-event
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,HookFailed,BeforeHookCreation
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        release: {{ .Release.Name }}
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: deploy-event
+          image: {{ .Values.deployEvent.hookImage | quote }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: IMAGE_REF
+              value: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+            - name: DEPLOY_EVENT_ENV
+              value: {{ default .Values.env.appEnv .Values.deployEvent.environment | quote }}
+            - name: DEPLOY_EVENT_ENDPOINT
+              value: {{ default (printf "http://%s-service.%s.svc.cluster.local/api/deployments" .Release.Name .Release.Namespace) .Values.deployEvent.endpoint | quote }}
+            - name: DEPLOY_EVENT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.deployEventTokenSecret.name | quote }}
+                  key: {{ .Values.env.deployEventTokenSecret.key | quote }}
+                  optional: true
+          command:
+            - /busybox/sh
+            - -c
+            - |
+              set -eu
+
+              if [ -z "${DEPLOY_EVENT_TOKEN:-}" ]; then
+                echo "DEPLOY_EVENT_TOKEN not configured. Skipping deployment event post."
+                exit 0
+              fi
+
+              IMAGE_CONFIG="$(crane config "${IMAGE_REF}" | tr -d '\n' || true)"
+              if [ -z "${IMAGE_CONFIG}" ]; then
+                echo "Unable to read image config for ${IMAGE_REF}. Skipping."
+                exit 0
+              fi
+
+              COMMITTED_AT="$(printf '%s' "${IMAGE_CONFIG}" | sed -n 's/.*"org.opencontainers.image.created":"\([^"]*\)".*/\1/p')"
+              GIT_SHA="$(printf '%s' "${IMAGE_CONFIG}" | sed -n 's/.*"org.opencontainers.image.revision":"\([^"]*\)".*/\1/p')"
+
+              if [ -z "${GIT_SHA}" ]; then
+                GIT_SHA="$(echo "${IMAGE_REF}" | awk -F: '{print $NF}')"
+              fi
+
+              if [ -z "${COMMITTED_AT}" ]; then
+                COMMITTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              fi
+
+              PAYLOAD="$(printf '{\"git_sha\":\"%s\",\"committed_at\":\"%s\",\"environment\":\"%s\",\"status\":\"success\"}' "${GIT_SHA}" "${COMMITTED_AT}" "${DEPLOY_EVENT_ENV}")"
+
+              /busybox/wget -qO- \
+                --header "Content-Type: application/json" \
+                --header "X-Deploy-Token: ${DEPLOY_EVENT_TOKEN}" \
+                --post-data "${PAYLOAD}" \
+                "${DEPLOY_EVENT_ENDPOINT}" > /dev/null || true
+
+              echo "PostSync deployment event completed (errors ignored by design)."
+{{- end }}
