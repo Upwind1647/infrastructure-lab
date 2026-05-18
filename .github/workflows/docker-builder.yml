@@ -64,10 +64,16 @@ jobs:
         id: build_image
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
+          FULL_SHA=$(git rev-parse HEAD)
+          COMMITTED_AT=$(git log -1 --format=%cI)
           IMAGE_TAG="${IMAGE_NAME}:${SHORT_SHA}"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "committed_at=${COMMITTED_AT}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-          docker build -t "${IMAGE_TAG}" .
+          docker build \
+            --label "org.opencontainers.image.revision=${FULL_SHA}" \
+            --label "org.opencontainers.image.created=${COMMITTED_AT}" \
+            -t "${IMAGE_TAG}" .
 
       # Scan the image for vulnerabilities
       - name: Run Trivy Vulnerability Scanner
